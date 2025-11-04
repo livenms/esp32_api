@@ -1,5 +1,6 @@
 flask
 gunicorn
 paho-mqtt
+flask_login
 
 
