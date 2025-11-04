@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, redirect, url_for
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime, timedelta
 import logging
 from collections import deque
@@ -9,8 +10,24 @@ import time
 import sqlite3
 import os
 from contextlib import contextmanager
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = 'broodinnox-pro-secret-key-2024'  # Change this in production!
+
+# Login Manager Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+
+
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, id, username):
+        self.id = id
+        self.username = username
+
 
 # Enhanced logging
 logging.basicConfig(
@@ -24,10 +41,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Database initialization
+# Database initialization - Updated to include users table
 def init_db():
     conn = sqlite3.connect('broodinnox.db')
     cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT DEFAULT 'user',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS temperature_data (
@@ -60,6 +87,16 @@ def init_db():
         )
     ''')
 
+    # Create default admin user if not exists
+    password_hash = generate_password_hash('admin123')
+    try:
+        cursor.execute(
+            'INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+            ('admin', password_hash, 'admin')
+        )
+    except sqlite3.IntegrityError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -76,6 +113,365 @@ def get_db_connection():
     finally:
         conn.close()
 
+
+# User loader callback for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+        user_data = cursor.fetchone()
+        if user_data:
+            return User(user_data['id'], user_data['username'])
+    return None
+
+
+# Login Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            user_data = cursor.fetchone()
+
+            if user_data and check_password_hash(user_data['password_hash'], password):
+                user = User(user_data['id'], user_data['username'])
+                login_user(user)
+                logger.info(f"User {username} logged in successfully")
+
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('dashboard'))
+            else:
+                return render_template_string(LOGIN_TEMPLATE, error='Invalid username or password')
+
+    return render_template_string(LOGIN_TEMPLATE)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if password != confirm_password:
+            return render_template_string(REGISTER_TEMPLATE, error='Passwords do not match')
+
+        if len(password) < 6:
+            return render_template_string(REGISTER_TEMPLATE, error='Password must be at least 6 characters')
+
+        password_hash = generate_password_hash(password)
+
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                    (username, password_hash)
+                )
+                conn.commit()
+
+            logger.info(f"New user registered: {username}")
+            return redirect(url_for('login'))
+
+        except sqlite3.IntegrityError:
+            return render_template_string(REGISTER_TEMPLATE, error='Username already exists')
+
+    return render_template_string(REGISTER_TEMPLATE)
+
+
+# Login Templates
+LOGIN_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broodinnox Pro - Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .login-header p {
+            color: #7f8c8d;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+        .register-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-egg"></i> Broodinnox Pro</h1>
+            <p>Advanced Poultry Brooding Management</p>
+        </div>
+
+        {% if error %}
+        <div class="error">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="btn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+
+        <div class="register-link">
+            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
+
+REGISTER_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broodinnox Pro - Register</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .register-header h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .register-header p {
+            color: #7f8c8d;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .btn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+        .login-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <h1><i class="fas fa-egg"></i> Broodinnox Pro</h1>
+            <p>Create your account</p>
+        </div>
+
+        {% if error %}
+        <div class="error">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+
+            <button type="submit" class="btn">
+                <i class="fas fa-user-plus"></i> Register
+            </button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
 
 # Global variables
 device_status = {}
@@ -107,7 +503,7 @@ MQTT_TOPICS = {
 mqtt_client = mqtt.Client(client_id=f"broodinnox_dashboard_{int(time.time())}")
 mqtt_client.reconnect_delay_set(min_delay=1, max_delay=120)
 
-# HTML Template
+# HTML Template with user info added
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -170,6 +566,34 @@ HTML_TEMPLATE = '''
             align-items: center;
             justify-content: center;
             gap: 15px;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            padding: 8px 15px;
+            border-radius: 10px;
+        }
+
+        .user-info span {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            color: var(--danger);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            color: #c0392b;
         }
 
         .stats-bar {
@@ -527,6 +951,12 @@ HTML_TEMPLATE = '''
 
     <div class="container">
         <div class="header">
+            <div class="user-info">
+                <span><i class="fas fa-user"></i> {{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
             <h1>
                 <i class="fas fa-egg"></i>
                 Broodinnox Pro
@@ -1321,13 +1751,15 @@ def start_mqtt_client():
         threading.Timer(5, start_mqtt_client).start()
 
 
-# Flask Routes
+# Flask Routes - All protected with login_required
 @app.route("/")
+@login_required
 def dashboard():
     return render_template_string(HTML_TEMPLATE)
 
 
 @app.route("/status", methods=["GET"])
+@login_required
 def get_status():
     device_id = request.args.get("device", DEVICE_ID)
 
@@ -1356,6 +1788,7 @@ def get_status():
 
 
 @app.route("/control/relay", methods=["POST"])
+@login_required
 def control_relay():
     try:
         data = request.get_json()
@@ -1373,6 +1806,7 @@ def control_relay():
 
 
 @app.route("/control/setting", methods=["POST"])
+@login_required
 def control_setting():
     try:
         data = request.get_json()
@@ -1397,6 +1831,7 @@ def control_setting():
 
 
 @app.route("/api/analytics")
+@login_required
 def get_analytics():
     try:
         device_id = request.args.get("device", DEVICE_ID)
@@ -1436,6 +1871,7 @@ def get_analytics():
 
 
 @app.route("/api/alerts")
+@login_required
 def get_alerts():
     try:
         with get_db_connection() as conn:
@@ -1453,6 +1889,7 @@ def get_alerts():
 
 
 @app.route("/api/alerts/clear", methods=["POST"])
+@login_required
 def clear_alerts():
     try:
         with get_db_connection() as conn:
@@ -1466,6 +1903,7 @@ def clear_alerts():
 
 
 @app.route("/api/export")
+@login_required
 def export_data():
     try:
         device_id = request.args.get("device", DEVICE_ID)
@@ -1499,6 +1937,7 @@ def export_data():
 
 
 @app.route("/api/system/reset", methods=["POST"])
+@login_required
 def system_reset():
     try:
         logger.warning("🔄 Factory reset initiated")
@@ -1509,6 +1948,7 @@ def system_reset():
 
 
 @app.route("/debug")
+@login_required
 def debug_info():
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -1529,11 +1969,13 @@ if __name__ == "__main__":
     print("🚀 BROODINNOX PRO - SMART BROODING SYSTEM")
     print("=" * 70)
     print(f"📍 Dashboard: http://localhost:10000")
+    print(f"🔐 Login: http://localhost:10000/login")
     print(f"🐛 Debug: http://localhost:10000/debug")
     print(f"📊 Analytics: http://localhost:10000/api/analytics")
     print("\n📡 MQTT Topics:")
     for name, topic in MQTT_TOPICS.items():
         print(f"   {name}: {topic}")
+    print("\n🔑 Default credentials: admin / admin123")
     print("=" * 70 + "\n")
 
     mqtt_thread = threading.Thread(target=start_mqtt_client, daemon=True)
