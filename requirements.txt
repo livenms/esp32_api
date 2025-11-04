@@ -1,6 +1,8 @@
-flask
-gunicorn
+Flask
+Flask-Login
 paho-mqtt
-flask_login
-
-
+Werkzeug
+gunicorn
+Jinja2
+itsdangerous
+click
