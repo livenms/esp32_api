@@ -1,10 +1,7 @@
 services:
   - type: web
-    name: broodinnox-pro
+    name: broodinnox-server
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+    startCommand: gunicorn python_enterface:app --bind 0.0.0.0:$PORT
