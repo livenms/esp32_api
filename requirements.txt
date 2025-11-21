@@ -6,4 +6,7 @@ gunicorn
 Jinja2
 itsdangerous
 click
+fastapi
+uvicorn
+
 
