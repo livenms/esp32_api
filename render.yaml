@@ -1,7 +1,7 @@
 services:
   - type: web
-    name: broodinnox-server
+    name: esp32-api
     env: python
-    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn python_enterface:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn app:app
+    plan: free
