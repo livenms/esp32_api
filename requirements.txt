@@ -1,12 +1,2 @@
-Flask
-Flask-Login
-paho-mqtt
-Werkzeug
-gunicorn
-Jinja2
-itsdangerous
-click
 fastapi
 uvicorn
-
-
