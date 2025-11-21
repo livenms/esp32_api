@@ -1,31 +1,33 @@
 from flask import Flask, request, jsonify
-from datetime import datetime
 
 app = Flask(__name__)
 
+@app.route("/test", methods=["POST"])
+def receive_data():
+    try:
+        data = request.get_json(force=True)
+
+        name = data.get("name", "unknown")
+        temp = data.get("temp", None)
+
+        print("=== DATA RECEIVED FROM ESP32 ===")
+        print(data)
+
+        # Build feedback for ESP32
+        feedback = {
+            "status": "success",
+            "received_name": name,
+            "received_temp": temp,
+            "reply": "Data stored. Continue.",
+            "command": "LED_ON" if temp and temp > 30 else "LED_OFF"
+        }
+
+        return jsonify(feedback), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
 @app.route("/", methods=["GET"])
 def home():
-    return "GSM Flask API is running."
-
-@app.route("/api/name", methods=["POST"])
-def receive_name():
-    data = request.get_json()
-
-    if not data or "name" not in data:
-        return jsonify({
-            "status": "error",
-            "message": "Missing 'name' in JSON"
-        }), 400
-
-    name = data["name"]
-
-    print("Received name:", name)
-
-    return jsonify({
-        "status": "success",
-        "message": f"Hello {name}, your data was received!",
-        "time": datetime.now().isoformat()
-    })
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    return "ESP32 GSM Server Running!"
