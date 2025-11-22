@@ -1,9 +1,17 @@
 services:
   - type: web
-    name: esp32-api
+    name: fingerprint-server
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.4
+        value: 3.11.0
+```
+
+### File 4: `.gitignore`
+```
+fingerprints.json
+__pycache__/
+*.pyc
+.env
