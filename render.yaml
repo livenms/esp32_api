@@ -7,11 +7,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-```
-
-### File 4: `.gitignore`
-```
-fingerprints.json
-__pycache__/
-*.pyc
-.env
