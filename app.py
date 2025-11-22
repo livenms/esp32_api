@@ -1,78 +1,57 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-import logging
+from flask import Flask, request, jsonify, render_template_string
+import json
+import os
 
-app = FastAPI()
+STATE_FILE = 'state.json'
+app = Flask(__name__)
+PORT = int(os.environ.get('PORT', 80))
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Store LED state (in-memory storage)
-led_state = {"command": "OFF", "message": "Hello ESP32"}
-
-@app.get("/")
-async def root():
-    return {"message": "ESP32 API Server Running", "status": "online"}
-
-# GET endpoint - ESP32 fetches commands
-@app.get("/esp")
-async def get_esp_commands():
-    """ESP32 calls this to get the current LED command"""
-    response = {
-        "server_message": led_state["message"],
-        "led_command": led_state["command"]
-    }
-    logger.info(f"ESP32 GET request - Sending: {response}")
-    return JSONResponse(content=response)
-
-# POST endpoint - For updating commands (from web dashboard, etc.)
-@app.post("/esp")
-async def update_esp_commands(request: Request):
-    """Update LED state (called from web interface or other clients)"""
+# Load or default state
+if os.path.exists(STATE_FILE):
     try:
-        body = await request.body()
-        if not body:
-            logger.warning("Received empty POST body")
-            return JSONResponse(
-                content={"error": "Empty request body"},
-                status_code=400
-            )
-        
-        data = await request.json()
-        logger.info(f"Received POST data: {data}")
-        
-        # Update stored state
-        if "led_command" in data:
-            led_state["command"] = data["led_command"]
-        if "message" in data:
-            led_state["message"] = data["message"]
-            
-        return JSONResponse(content={
-            "status": "success",
-            "current_state": led_state
-        })
-        
-    except Exception as e:
-        logger.error(f"Error processing POST: {str(e)}")
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+        with open(STATE_FILE, 'r') as f:
+            state = json.load(f)
+    except Exception:
+        state = {"server_message":"Hello from Flask","led_command":"OFF"}
+else:
+    state = {"server_message":"Hello from Flask","led_command":"OFF"}
 
-# Manual control endpoint
-@app.post("/control")
-async def control_led(request: Request):
-    """Manual control endpoint"""
-    data = await request.json()
-    if "led" in data:
-        led_state["command"] = "ON" if data["led"] else "OFF"
-        logger.info(f"LED manually set to: {led_state['command']}")
-    if "message" in data:
-        led_state["message"] = data["message"]
-    return JSONResponse(content={"status": "success", "state": led_state})
+def save_state():
+    with open(STATE_FILE, 'w') as f:
+        json.dump(state, f)
 
-@app.get("/status")
-async def get_status():
-    """Check current LED state"""
-    return JSONResponse(content=led_state)
+@app.route('/esp', methods=['GET'])
+def esp():
+    led = request.args.get('led', None)
+    if led and led.upper() in ('ON','OFF'):
+        state['led_command'] = led.upper()
+        state['server_message'] = f"LED set to {state['led_command']} by query"
+        save_state()
+    return jsonify(state)
+
+@app.route('/set', methods=['GET'])
+def set_led():
+    led = request.args.get('led', None)
+    if not led or led.upper() not in ('ON', 'OFF'):
+        return jsonify({'error':'use ?led=ON or ?led=OFF'}), 400
+    state['led_command'] = led.upper()
+    state['server_message'] = f"LED set to {state['led_command']} via /set"
+    save_state()
+    return jsonify(state)
+
+@app.route('/')
+def home():
+    html = f"""
+    <html><body>
+      <h3>ESP Flask Server</h3>
+      <p>Current LED: {state['led_command']}</p>
+      <a href="/set?led=ON">Turn ON</a> |
+      <a href="/set?led=OFF">Turn OFF</a>
+      <hr/>
+      <p>ESP GET endpoint: <code>/esp</code></p>
+    </body></html>
+    """
+    return html
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=PORT)
