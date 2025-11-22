@@ -1,11 +1,22 @@
 from flask import Flask, request, jsonify
-import numpy as np
 import base64
 import json
 import os
 from datetime import datetime
 
 app = Flask(__name__)
+
+# Lightweight similarity calculation without numpy
+def hamming_distance(bytes1, bytes2):
+    """Calculate Hamming distance between two byte arrays"""
+    distance = 0
+    for b1, b2 in zip(bytes1, bytes2):
+        xor = b1 ^ b2
+        # Count set bits
+        while xor:
+            distance += xor & 1
+            xor >>= 1
+    return distance
 
 # Database file to store fingerprint templates
 DATABASE_FILE = 'fingerprints.json'
@@ -36,17 +47,12 @@ def calculate_similarity(template1, template2):
     if len(template1) != len(template2):
         return 0
     
-    # Convert to numpy arrays for faster computation
-    arr1 = np.frombuffer(template1, dtype=np.uint8)
-    arr2 = np.frombuffer(template2, dtype=np.uint8)
-    
     # Calculate Hamming distance (number of differing bits)
-    xor = np.bitwise_xor(arr1, arr2)
-    hamming_distance = np.unpackbits(xor).sum()
+    ham_dist = hamming_distance(template1, template2)
     
     # Calculate similarity percentage
     total_bits = len(template1) * 8
-    similarity = 100 * (1 - (hamming_distance / total_bits))
+    similarity = 100 * (1 - (ham_dist / total_bits))
     
     return round(similarity, 2)
 
