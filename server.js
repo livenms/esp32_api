@@ -25,7 +25,8 @@ const MQTT_CONFIG = {
         sensorControl: 'broodinnox/control/sensor',
         weeklyReduce: 'broodinnox/control/weekly_reduce',
         reduceNow: 'broodinnox/control/reduce_now',
-        mode: 'broodinnox/control/mode'
+        mode: 'broodinnox/control/mode',
+        startDate: 'broodinnox/control/start_date'
     }
 };
 
