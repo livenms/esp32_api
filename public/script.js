@@ -91,6 +91,20 @@ function setupEventListeners() {
     document.getElementById('sensor2-toggle').addEventListener('change', () => toggleSensor(2));
     document.getElementById('sensor3-toggle').addEventListener('change', () => toggleSensor(3));
     document.getElementById('sensor4-toggle').addEventListener('change', () => toggleSensor(4));
+    
+    // Date controls
+    document.getElementById('update-date-btn').addEventListener('click', updateStartDate);
+    document.getElementById('start-date-picker').addEventListener('change', function() {
+        document.getElementById('update-date-btn').disabled = false;
+    });
+    
+    // Manual date controls
+    document.getElementById('inc-start-year').addEventListener('click', () => adjustStartDate('year', 1));
+    document.getElementById('dec-start-year').addEventListener('click', () => adjustStartDate('year', -1));
+    document.getElementById('inc-start-month').addEventListener('click', () => adjustStartDate('month', 1));
+    document.getElementById('dec-start-month').addEventListener('click', () => adjustStartDate('month', -1));
+    document.getElementById('inc-start-day').addEventListener('click', () => adjustStartDate('day', 1));
+    document.getElementById('dec-start-day').addEventListener('click', () => adjustStartDate('day', -1));
 }
 
 // Connect to WebSocket server
@@ -240,6 +254,9 @@ function updateDashboard(data) {
         document.getElementById('system-status').textContent = data.mode;
     }
     
+    // Update start date information
+    updateStartDateDisplay(data);
+    
     // Update error status
     if (data.error && data.error !== "OK") {
         document.getElementById('error-message').textContent = data.error;
@@ -284,6 +301,27 @@ function updateSensorDisplay() {
                 sensorElement.classList.remove('active');
             }
         }
+    }
+}
+
+// Update start date display
+function updateStartDateDisplay(data) {
+    if (data.start_date) {
+        // If start_date is provided in the data
+        document.getElementById('current-start-date').textContent = data.start_date;
+    } else if (data.starting_year && data.starting_month && data.starting_day) {
+        // If individual components are provided
+        const formattedDate = `${data.starting_year}-${data.starting_month.toString().padStart(2, '0')}-${data.starting_day.toString().padStart(2, '0')}`;
+        document.getElementById('current-start-date').textContent = formattedDate;
+        
+        // Update manual controls
+        document.getElementById('start-year-value').textContent = data.starting_year;
+        document.getElementById('start-month-value').textContent = data.starting_month;
+        document.getElementById('start-day-value').textContent = data.starting_day;
+        
+        // Update date picker
+        document.getElementById('start-date-picker').value = formattedDate;
+        document.getElementById('update-date-btn').disabled = true;
     }
 }
 
@@ -450,4 +488,53 @@ function toggleSensor(sensorNum) {
         );
         updateSensorDisplay();
     }
+}
+
+// Date control functions
+function updateStartDate() {
+    const datePicker = document.getElementById('start-date-picker');
+    const selectedDate = datePicker.value;
+    
+    if (selectedDate) {
+        sendControlCommand('broodinnox/control/start_date', selectedDate);
+        document.getElementById('update-date-btn').disabled = true;
+        showNotification('Start date updated successfully', 'success');
+    } else {
+        showNotification('Please select a valid date', 'error');
+    }
+}
+
+function adjustStartDate(type, change) {
+    const currentElement = document.getElementById(`start-${type}-value`);
+    if (!currentElement) return;
+    
+    let currentValue = parseInt(currentElement.textContent);
+    let newValue = currentValue + change;
+    
+    // Apply constraints
+    switch (type) {
+        case 'year':
+            if (newValue < 2020) newValue = 2020;
+            if (newValue > 2030) newValue = 2030;
+            break;
+        case 'month':
+            if (newValue < 1) newValue = 1;
+            if (newValue > 12) newValue = 12;
+            break;
+        case 'day':
+            if (newValue < 1) newValue = 1;
+            if (newValue > 31) newValue = 31;
+            break;
+    }
+    
+    currentElement.textContent = newValue;
+    
+    // Format date as YYYY-MM-DD and send
+    const year = document.getElementById('start-year-value').textContent;
+    const month = document.getElementById('start-month-value').textContent.padStart(2, '0');
+    const day = document.getElementById('start-day-value').textContent.padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
+    sendControlCommand('broodinnox/control/start_date', formattedDate);
+    showNotification('Start date updated successfully', 'success');
 }
