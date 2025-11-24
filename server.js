@@ -37,6 +37,8 @@ let mqttClient = null;
 // Initialize MQTT connection
 function connectMQTT() {
     try {
+        console.log(`🔗 Connecting to MQTT broker: ${MQTT_CONFIG.broker}:${MQTT_CONFIG.port}`);
+        
         mqttClient = mqtt.connect(`mqtt://${MQTT_CONFIG.broker}:${MQTT_CONFIG.port}`, {
             clientId: 'broodinnox_server_' + Math.random().toString(16).substr(2, 8),
             clean: true,
@@ -101,7 +103,7 @@ function connectMQTT() {
 // WebSocket server for real-time updates
 const wss = new WebSocket.Server({ noServer: true });
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, request) => {
     console.log('✅ New WebSocket connection');
     clients.add(ws);
 
@@ -179,7 +181,8 @@ app.get('/api/health', (req, res) => {
         status: 'ok',
         mqtt: mqttClient ? mqttClient.connected : false,
         clients: clients.size,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -191,9 +194,10 @@ app.get('/api/data', (req, res) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📱 Dashboard available at: http://localhost:${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     connectMQTT();
 });
 
@@ -205,8 +209,27 @@ server.on('upgrade', (request, socket, head) => {
 });
 
 // Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('🛑 Received SIGTERM, shutting down gracefully...');
+    
+    // Close MQTT connection
+    if (mqttClient) {
+        mqttClient.end();
+    }
+    
+    // Close WebSocket connections
+    clients.forEach(client => client.close());
+    wss.close();
+    
+    // Close HTTP server
+    server.close(() => {
+        console.log('✅ Server shut down');
+        process.exit(0);
+    });
+});
+
 process.on('SIGINT', () => {
-    console.log('🛑 Shutting down gracefully...');
+    console.log('🛑 Received SIGINT, shutting down gracefully...');
     
     // Close MQTT connection
     if (mqttClient) {
