@@ -220,6 +220,12 @@ header {
     gap: 10px;
 }
 
+.btn-small {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    min-width: 30px;
+}
+
 .sensor-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -399,6 +405,65 @@ input:checked + .slider:before {
     100% { opacity: 1; }
 }
 
+/* Date Controls */
+.date-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-picker {
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.date-picker:focus {
+    outline: none;
+    border-color: var(--secondary);
+}
+
+.date-display {
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.manual-date-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.date-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.date-control-label {
+    font-size: 0.8rem;
+    color: var(--gray);
+    text-align: center;
+}
+
+.date-input-group {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.date-value {
+    min-width: 40px;
+    text-align: center;
+    font-weight: 600;
+    padding: 5px;
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
 footer {
     text-align: center;
     margin-top: 30px;
@@ -429,5 +494,18 @@ footer {
     .status-bar {
         width: 100%;
         justify-content: space-around;
+    }
+    
+    .manual-date-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .date-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-picker {
+        width: 100%;
     }
 }
