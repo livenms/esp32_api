@@ -1,157 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Fingerprint Attendance Dashboard</title>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: #eef2f5;
-    margin: 0;
-    padding: 0;
-}
-header {
-    background: #1f5f8b;
-    color: white;
-    padding: 15px;
-    font-size: 22px;
-    text-align: center;
-}
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-}
-.card {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.1);
-}
-button {
-    padding: 10px 20px;
-    background: #1f5f8b;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-button:hover {
-    background: #174865;
-}
-input {
-    padding: 10px;
-    width: 300px;
-    margin: 5px;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-table th, table td {
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broodinnox Smart Brooding System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-
-<header>Fingerprint Attendance Dashboard</header>
-
-<div class="container">
-
-    <div class="card">
-        <h3>ESP32 Control</h3>
-        <button onclick="sendCmd('register')">Register Mode</button>
-        <button onclick="sendCmd('attendance')">Attendance Mode</button>
-        <button onclick="sendCmd('clear')">Clear All Students</button>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-egg"></i>
+                <div>
+                    <h1>Broodinnox Smart Brooding</h1>
+                    <p>Monitor and Control Poultry Environment</p>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-value" id="current-day">Day 1</div>
+                    <div class="status-label">Current Day</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="total-days">30 Days</div>
+                    <div class="status-label">Total Days</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="system-status">Online</div>
+                    <div class="status-label">System Status</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="connection-status" id="connection-status">
+            <div class="connection-dot" id="connection-dot"></div>
+            <span id="connection-text">Connecting...</span>
+        </div>
+        
+        <div id="error-alert" class="alert alert-error" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="error-message">Sensor error detected</span>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Temperature Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Temperature Control</h2>
+                    <i class="fas fa-thermometer-half card-icon"></i>
+                </div>
+                <div class="temperature-display">
+                    <div class="temp-circle">
+                        <div class="temp-value" id="current-temp">--.-</div>
+                        <div class="temp-label">Current Temperature</div>
+                    </div>
+                    <div class="temp-range">
+                        <div class="range-item">
+                            <span class="range-label">Maximum:</span>
+                            <span class="range-value" id="max-temp">36°C</span>
+                        </div>
+                        <div class="range-item">
+                            <span class="range-label">Minimum:</span>
+                            <span class="range-value" id="min-temp">32°C</span>
+                        </div>
+                        <div class="range-item">
+                            <span class="range-label">Heater:</span>
+                            <span class="range-value" id="heater-status">OFF</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="control-item">
+                        <span class="control-label">Set Max Temperature</span>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="dec-max-temp">-</button>
+                            <span id="max-temp-value" class="range-value">36</span>
+                            <button class="btn btn-primary" id="inc-max-temp">+</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Set Min Temperature</span>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="dec-min-temp">-</button>
+                            <span id="min-temp-value" class="range-value">32</span>
+                            <button class="btn btn-primary" id="inc-min-temp">+</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Weekly Reduction</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="weekly-reduce-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Force Reduce Now</span>
+                        <button class="btn btn-warning" id="reduce-now-btn">Reduce 1°C</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Heater Control Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Heater Control</h2>
+                    <i class="fas fa-fire card-icon"></i>
+                </div>
+                <div class="control-group">
+                    <div class="control-item">
+                        <span class="control-label">Heater Mode</span>
+                        <div class="btn-group">
+                            <button class="btn btn-success" id="auto-mode-btn">AUTO</button>
+                            <button class="btn btn-primary" id="manual-mode-btn">MANUAL</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Manual Control</span>
+                        <div class="btn-group">
+                            <button class="btn btn-success" id="heater-on-btn">ON</button>
+                            <button class="btn btn-danger" id="heater-off-btn">OFF</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">System Mode</span>
+                        <div class="btn-group">
+                            <button class="btn btn-success" id="online-mode-btn">ONLINE</button>
+                            <button class="btn btn-primary" id="offline-mode-btn">OFFLINE</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="temp-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Sensors Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Sensor Status</h2>
+                    <i class="fas fa-microchip card-icon"></i>
+                </div>
+                <div class="sensor-grid">
+                    <div class="sensor-item active">
+                        <div class="sensor-name">DHT 1</div>
+                        <div class="sensor-value" id="sensor1-temp">--.-</div>
+                        <div class="sensor-status status-online">ACTIVE</div>
+                    </div>
+                    <div class="sensor-item active">
+                        <div class="sensor-name">DHT 2</div>
+                        <div class="sensor-value" id="sensor2-temp">--.-</div>
+                        <div class="sensor-status status-online">ACTIVE</div>
+                    </div>
+                    <div class="sensor-item active">
+                        <div class="sensor-name">DHT 3</div>
+                        <div class="sensor-value" id="sensor3-temp">--.-</div>
+                        <div class="sensor-status status-online">ACTIVE</div>
+                    </div>
+                    <div class="sensor-item active">
+                        <div class="sensor-name">DHT 4</div>
+                        <div class="sensor-value" id="sensor4-temp">--.-</div>
+                        <div class="sensor-status status-online">ACTIVE</div>
+                    </div>
+                </div>
+                <div class="control-group" style="margin-top: 20px;">
+                    <div class="control-item">
+                        <span class="control-label">Sensor 1</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sensor1-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Sensor 2</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sensor2-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Sensor 3</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sensor3-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Sensor 4</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sensor4-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Settings Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">System Settings</h2>
+                    <i class="fas fa-cog card-icon"></i>
+                </div>
+                <div class="control-group">
+                    <div class="control-item">
+                        <span class="control-label">Total Days</span>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="dec-total-days">-</button>
+                            <span id="total-days-value" class="range-value">30</span>
+                            <button class="btn btn-primary" id="inc-total-days">+</button>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Start Date</span>
+                        <span id="start-date-value">2025-10-11</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Current Time</span>
+                        <span id="current-time-value">--:--:--</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Last Update</span>
+                        <span id="last-update-value">--:--:--</span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <h3 style="margin-bottom: 10px;">System Information</h3>
+                    <div class="control-group">
+                        <div class="control-item">
+                            <span class="control-label">Server Status</span>
+                            <span id="server-status">Connected</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">MQTT Status</span>
+                            <span id="mqtt-status">Connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Broodinnox Smart Brooding System &copy; 2025 | Enhanced MQTT Version</p>
+            <p>Deployed on Render | Real-time Dashboard</p>
+        </footer>
     </div>
 
-    <div class="card">
-        <h3>Register Student (Upload Template)</h3>
-        <input id="name" placeholder="Student Name"><br>
-        <input id="phone" placeholder="Phone Number"><br>
-        <textarea id="template" placeholder="Paste HEX template here" style="width:99%;height:120px;"></textarea><br>
-        <button onclick="uploadTemplate()">Save Student</button>
-    </div>
-
-    <div class="card">
-        <h3>Students List</h3>
-        <table id="studentsTable">
-            <tr><th>ID</th><th>Name</th><th>Phone</th></tr>
-        </table>
-    </div>
-
-    <div class="card">
-        <h3>Attendance Result</h3>
-        <div id="attendanceResult">—</div>
-    </div>
-</div>
-
-<script>
-const BASE = "";  // Auto-use current server
-
-// Send ESP32 Command
-function sendCmd(cmd) {
-    fetch(BASE + "/setCommand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cmd })
-    })
-    .then(r => r.json())
-    .then(d => alert("Command sent: " + d.sent));
-}
-
-// Upload template to register new user
-function uploadTemplate() {
-    const name = document.getElementById("name").value;
-    const phone = document.getElementById("phone").value;
-    const template = document.getElementById("template").value;
-
-    fetch(BASE + "/uploadTemplate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, template })
-    })
-    .then(r => r.json())
-    .then(d => {
-        alert("Saved: " + JSON.stringify(d));
-        loadStudents();
-    });
-}
-
-// Load all students
-function loadStudents() {
-    fetch(BASE + "/students")
-    .then(r => r.json())
-    .then(list => {
-        const table = document.getElementById("studentsTable");
-        table.innerHTML = "<tr><th>ID</th><th>Name</th><th>Phone</th></tr>";
-
-        list.forEach(s => {
-            table.innerHTML += `<tr>
-                <td>${s.id}</td>
-                <td>${s.name}</td>
-                <td>${s.phone}</td>
-            </tr>`;
-        });
-    });
-}
-
-// Poll server for attendance matches
-setInterval(() => {
-    fetch("/lastMatch")
-    .then(r => r.json())
-    .then(result => {
-        if (result.name)
-            document.getElementById("attendanceResult").innerHTML =
-                `<b>${result.name}</b> ✔ Present`;
-    });
-}, 2000);
-
-loadStudents();
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
