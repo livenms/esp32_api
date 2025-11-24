@@ -202,4 +202,210 @@ function updateDashboard(data) {
         if (data.sensors.temp2 && data.sensors.temp2 !== "NaN") {
             document.getElementById('sensor2-temp').textContent = parseFloat(data.sensors.temp2).toFixed(1);
         }
-        if (data.sensors.temp3 &&
+        if (data.sensors.temp3 && data.sensors.temp3 !== "NaN") {
+            document.getElementById('sensor3-temp').textContent = parseFloat(data.sensors.temp3).toFixed(1);
+        }
+        if (data.sensors.temp4 && data.sensors.temp4 !== "NaN") {
+            document.getElementById('sensor4-temp').textContent = parseFloat(data.sensors.temp4).toFixed(1);
+        }
+        
+        // Update sensor active states
+        document.getElementById('sensor1-toggle').checked = data.sensors.s1_active;
+        document.getElementById('sensor2-toggle').checked = data.sensors.s2_active;
+        document.getElementById('sensor3-toggle').checked = data.sensors.s3_active;
+        document.getElementById('sensor4-toggle').checked = data.sensors.s4_active;
+        
+        updateSensorDisplay();
+    }
+    
+    // Update weekly reduction toggle
+    if (data.weekly_reduce_enabled !== undefined) {
+        document.getElementById('weekly-reduce-toggle').checked = data.weekly_reduce_enabled;
+    }
+    
+    // Update system mode
+    if (data.mode) {
+        document.getElementById('system-status').textContent = data.mode;
+    }
+    
+    // Update error status
+    if (data.error && data.error !== "OK") {
+        document.getElementById('error-message').textContent = data.error;
+        document.getElementById('error-alert').style.display = 'flex';
+    } else {
+        document.getElementById('error-alert').style.display = 'none';
+    }
+    
+    // Update last update time
+    document.getElementById('last-update-value').textContent = new Date().toLocaleTimeString();
+}
+
+// Update temperature chart
+function updateChart(temperature) {
+    const now = new Date();
+    const timeLabel = now.getHours() + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    tempData.labels.push(timeLabel);
+    tempData.datasets[0].data.push(temperature);
+    
+    // Keep only last 20 data points
+    if (tempData.labels.length > 20) {
+        tempData.labels.shift();
+        tempData.datasets[0].data.shift();
+    }
+    
+    tempChart.update();
+}
+
+// Update sensor display based on active state
+function updateSensorDisplay() {
+    for (let i = 1; i <= 4; i++) {
+        const sensorElement = document.querySelector(`.sensor-item:nth-child(${i})`);
+        const toggle = document.getElementById(`sensor${i}-toggle`);
+        
+        if (toggle.checked) {
+            sensorElement.classList.add('active');
+            sensorElement.classList.remove('inactive');
+        } else {
+            sensorElement.classList.add('inactive');
+            sensorElement.classList.remove('active');
+        }
+    }
+}
+
+// Update connection status display
+function updateConnectionStatus(connected) {
+    const statusElement = document.getElementById('connection-status');
+    const dotElement = document.getElementById('connection-dot');
+    const textElement = document.getElementById('connection-text');
+    const serverStatus = document.getElementById('server-status');
+    const mqttStatus = document.getElementById('mqtt-status');
+    
+    if (connected) {
+        statusElement.className = 'connection-status connected';
+        textElement.textContent = 'Connected to Broodinnox Server';
+        serverStatus.textContent = 'Connected';
+        serverStatus.style.color = '#27ae60';
+        mqttStatus.textContent = 'Connected';
+        mqttStatus.style.color = '#27ae60';
+    } else {
+        statusElement.className = 'connection-status disconnected';
+        textElement.textContent = 'Disconnected from Server';
+        serverStatus.textContent = 'Disconnected';
+        serverStatus.style.color = '#e74c3c';
+        mqttStatus.textContent = 'Disconnected';
+        mqttStatus.style.color = '#e74c3c';
+    }
+}
+
+// Update current time
+function updateTime() {
+    const now = new Date();
+    document.getElementById('current-time-value').textContent = 
+        now.getHours().toString().padStart(2, '0') + ':' + 
+        now.getMinutes().toString().padStart(2, '0') + ':' + 
+        now.getSeconds().toString().padStart(2, '0');
+}
+
+// Send control command to server
+function sendControlCommand(topic, value) {
+    if (isConnected && ws) {
+        ws.send(JSON.stringify({
+            type: 'control',
+            topic: topic,
+            value: value
+        }));
+    } else {
+        showNotification('Not connected to server', 'error');
+    }
+}
+
+// Show notification
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Add to page
+    document.querySelector('.container').insertBefore(notification, document.querySelector('.dashboard'));
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Control functions
+function adjustTemperature(type, change) {
+    const currentElement = document.getElementById(`${type}-temp-value`);
+    let currentValue = parseInt(currentElement.textContent);
+    let newValue = currentValue + change;
+    
+    // Apply constraints
+    if (type === 'max') {
+        if (newValue <= parseInt(document.getElementById('min-temp-value').textContent)) {
+            newValue = parseInt(document.getElementById('min-temp-value').textContent) + 1;
+        }
+        if (newValue > 45) newValue = 45;
+    } else {
+        if (newValue >= parseInt(document.getElementById('max-temp-value').textContent)) {
+            newValue = parseInt(document.getElementById('max-temp-value').textContent) - 1;
+        }
+        if (newValue < 10) newValue = 10;
+    }
+    
+    currentElement.textContent = newValue;
+    sendControlCommand(
+        type === 'max' ? 'broodinnox/control/max_temp' : 'broodinnox/control/min_temp',
+        newValue.toString()
+    );
+}
+
+function setHeaterMode(mode) {
+    sendControlCommand('broodinnox/control/relay', mode === 'AUTO' ? 'AUTO' : 'MANUAL');
+}
+
+function setHeaterState(state) {
+    sendControlCommand('broodinnox/control/relay', state);
+}
+
+function setSystemMode(mode) {
+    sendControlCommand('broodinnox/control/mode', mode);
+}
+
+function forceReduceTemp() {
+    sendControlCommand('broodinnox/control/reduce_now', 'NOW');
+}
+
+function toggleWeeklyReduce() {
+    const enabled = document.getElementById('weekly-reduce-toggle').checked;
+    sendControlCommand(
+        'broodinnox/control/weekly_reduce',
+        enabled ? 'ON' : 'OFF'
+    );
+}
+
+function adjustTotalDays(change) {
+    const currentElement = document.getElementById('total-days-value');
+    let currentValue = parseInt(currentElement.textContent);
+    let newValue = currentValue + change;
+    
+    if (newValue < 1) newValue = 1;
+    if (newValue > 365) newValue = 365;
+    
+    currentElement.textContent = newValue;
+    sendControlCommand('broodinnox/control/total_days', newValue.toString());
+}
+
+function toggleSensor(sensorNum) {
+    const enabled = document.getElementById(`sensor${sensorNum}-toggle`).checked;
+    sendControlCommand(
+        'broodinnox/control/sensor',
+        `${sensorNum}:${enabled ? 'ON' : 'OFF'}`
+    );
+    updateSensorDisplay();
+}
