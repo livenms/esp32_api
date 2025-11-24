@@ -2,7 +2,7 @@
 let ws = null;
 let isConnected = false;
 let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
+const maxReconnectAttempts = 10;
 const reconnectDelay = 3000;
 
 // Chart configuration
@@ -99,6 +99,7 @@ function connectWebSocket() {
     const wsUrl = `${protocol}//${window.location.host}`;
     
     try {
+        console.log(`🔗 Connecting to WebSocket: ${wsUrl}`);
         ws = new WebSocket(wsUrl);
         
         ws.onopen = () => {
@@ -117,16 +118,19 @@ function connectWebSocket() {
             }
         };
         
-        ws.onclose = () => {
-            console.log('🔌 Disconnected from server');
+        ws.onclose = (event) => {
+            console.log('🔌 Disconnected from server:', event.code, event.reason);
             isConnected = false;
             updateConnectionStatus(false);
             
             // Attempt to reconnect
             if (reconnectAttempts < maxReconnectAttempts) {
                 reconnectAttempts++;
-                console.log(`🔄 Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
-                setTimeout(connectWebSocket, reconnectDelay);
+                const delay = reconnectDelay * Math.pow(1.5, reconnectAttempts - 1);
+                console.log(`🔄 Attempting to reconnect in ${delay}ms... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                setTimeout(connectWebSocket, delay);
+            } else {
+                console.error('❌ Max reconnection attempts reached');
             }
         };
         
@@ -161,28 +165,28 @@ function handleServerMessage(message) {
 // Update dashboard with received data
 function updateDashboard(data) {
     // Update temperature
-    if (data.temperature) {
+    if (data.temperature !== undefined) {
         document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
         updateChart(data.temperature);
     }
     
     // Update day information
-    if (data.cycle_day) {
+    if (data.cycle_day !== undefined) {
         document.getElementById('current-day').textContent = `Day ${data.cycle_day}`;
     }
     
-    if (data.total_days) {
+    if (data.total_days !== undefined) {
         document.getElementById('total-days').textContent = `${data.total_days} Days`;
         document.getElementById('total-days-value').textContent = data.total_days;
     }
     
     // Update temperature settings
-    if (data.max_temp) {
+    if (data.max_temp !== undefined) {
         document.getElementById('max-temp').textContent = `${data.max_temp}°C`;
         document.getElementById('max-temp-value').textContent = data.max_temp;
     }
     
-    if (data.min_temp) {
+    if (data.min_temp !== undefined) {
         document.getElementById('min-temp').textContent = `${data.min_temp}°C`;
         document.getElementById('min-temp-value').textContent = data.min_temp;
     }
@@ -210,10 +214,18 @@ function updateDashboard(data) {
         }
         
         // Update sensor active states
-        document.getElementById('sensor1-toggle').checked = data.sensors.s1_active;
-        document.getElementById('sensor2-toggle').checked = data.sensors.s2_active;
-        document.getElementById('sensor3-toggle').checked = data.sensors.s3_active;
-        document.getElementById('sensor4-toggle').checked = data.sensors.s4_active;
+        if (data.sensors.s1_active !== undefined) {
+            document.getElementById('sensor1-toggle').checked = data.sensors.s1_active;
+        }
+        if (data.sensors.s2_active !== undefined) {
+            document.getElementById('sensor2-toggle').checked = data.sensors.s2_active;
+        }
+        if (data.sensors.s3_active !== undefined) {
+            document.getElementById('sensor3-toggle').checked = data.sensors.s3_active;
+        }
+        if (data.sensors.s4_active !== undefined) {
+            document.getElementById('sensor4-toggle').checked = data.sensors.s4_active;
+        }
         
         updateSensorDisplay();
     }
@@ -263,12 +275,14 @@ function updateSensorDisplay() {
         const sensorElement = document.querySelector(`.sensor-item:nth-child(${i})`);
         const toggle = document.getElementById(`sensor${i}-toggle`);
         
-        if (toggle.checked) {
-            sensorElement.classList.add('active');
-            sensorElement.classList.remove('inactive');
-        } else {
-            sensorElement.classList.add('inactive');
-            sensorElement.classList.remove('active');
+        if (sensorElement && toggle) {
+            if (toggle.checked) {
+                sensorElement.classList.add('active');
+                sensorElement.classList.remove('inactive');
+            } else {
+                sensorElement.classList.add('inactive');
+                sensorElement.classList.remove('active');
+            }
         }
     }
 }
@@ -284,39 +298,44 @@ function updateConnectionStatus(connected) {
     if (connected) {
         statusElement.className = 'connection-status connected';
         textElement.textContent = 'Connected to Broodinnox Server';
-        serverStatus.textContent = 'Connected';
-        serverStatus.style.color = '#27ae60';
-        mqttStatus.textContent = 'Connected';
-        mqttStatus.style.color = '#27ae60';
+        if (serverStatus) serverStatus.textContent = 'Connected';
+        if (serverStatus) serverStatus.style.color = '#27ae60';
+        if (mqttStatus) mqttStatus.textContent = 'Connected';
+        if (mqttStatus) mqttStatus.style.color = '#27ae60';
     } else {
         statusElement.className = 'connection-status disconnected';
-        textElement.textContent = 'Disconnected from Server';
-        serverStatus.textContent = 'Disconnected';
-        serverStatus.style.color = '#e74c3c';
-        mqttStatus.textContent = 'Disconnected';
-        mqttStatus.style.color = '#e74c3c';
+        textElement.textContent = `Disconnected from Server (Retrying ${reconnectAttempts}/${maxReconnectAttempts})`;
+        if (serverStatus) serverStatus.textContent = 'Disconnected';
+        if (serverStatus) serverStatus.style.color = '#e74c3c';
+        if (mqttStatus) mqttStatus.textContent = 'Disconnected';
+        if (mqttStatus) mqttStatus.style.color = '#e74c3c';
     }
 }
 
 // Update current time
 function updateTime() {
     const now = new Date();
-    document.getElementById('current-time-value').textContent = 
-        now.getHours().toString().padStart(2, '0') + ':' + 
-        now.getMinutes().toString().padStart(2, '0') + ':' + 
-        now.getSeconds().toString().padStart(2, '0');
+    const timeElement = document.getElementById('current-time-value');
+    if (timeElement) {
+        timeElement.textContent = 
+            now.getHours().toString().padStart(2, '0') + ':' + 
+            now.getMinutes().toString().padStart(2, '0') + ':' + 
+            now.getSeconds().toString().padStart(2, '0');
+    }
 }
 
 // Send control command to server
 function sendControlCommand(topic, value) {
-    if (isConnected && ws) {
+    if (isConnected && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
             type: 'control',
             topic: topic,
             value: value
         }));
+        console.log(`📤 Sent control command: ${topic} = ${value}`);
     } else {
         showNotification('Not connected to server', 'error');
+        console.error('WebSocket not connected, cannot send command');
     }
 }
 
@@ -331,29 +350,44 @@ function showNotification(message, type) {
     `;
     
     // Add to page
-    document.querySelector('.container').insertBefore(notification, document.querySelector('.dashboard'));
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(notification, document.querySelector('.dashboard'));
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
 }
 
 // Control functions
 function adjustTemperature(type, change) {
     const currentElement = document.getElementById(`${type}-temp-value`);
+    if (!currentElement) return;
+    
     let currentValue = parseInt(currentElement.textContent);
     let newValue = currentValue + change;
     
     // Apply constraints
     if (type === 'max') {
-        if (newValue <= parseInt(document.getElementById('min-temp-value').textContent)) {
-            newValue = parseInt(document.getElementById('min-temp-value').textContent) + 1;
+        const minTempElement = document.getElementById('min-temp-value');
+        if (minTempElement) {
+            const minTemp = parseInt(minTempElement.textContent);
+            if (newValue <= minTemp) {
+                newValue = minTemp + 1;
+            }
         }
         if (newValue > 45) newValue = 45;
     } else {
-        if (newValue >= parseInt(document.getElementById('max-temp-value').textContent)) {
-            newValue = parseInt(document.getElementById('max-temp-value').textContent) - 1;
+        const maxTempElement = document.getElementById('max-temp-value');
+        if (maxTempElement) {
+            const maxTemp = parseInt(maxTempElement.textContent);
+            if (newValue >= maxTemp) {
+                newValue = maxTemp - 1;
+            }
         }
         if (newValue < 10) newValue = 10;
     }
@@ -382,15 +416,20 @@ function forceReduceTemp() {
 }
 
 function toggleWeeklyReduce() {
-    const enabled = document.getElementById('weekly-reduce-toggle').checked;
-    sendControlCommand(
-        'broodinnox/control/weekly_reduce',
-        enabled ? 'ON' : 'OFF'
-    );
+    const toggle = document.getElementById('weekly-reduce-toggle');
+    if (toggle) {
+        const enabled = toggle.checked;
+        sendControlCommand(
+            'broodinnox/control/weekly_reduce',
+            enabled ? 'ON' : 'OFF'
+        );
+    }
 }
 
 function adjustTotalDays(change) {
     const currentElement = document.getElementById('total-days-value');
+    if (!currentElement) return;
+    
     let currentValue = parseInt(currentElement.textContent);
     let newValue = currentValue + change;
     
@@ -402,10 +441,13 @@ function adjustTotalDays(change) {
 }
 
 function toggleSensor(sensorNum) {
-    const enabled = document.getElementById(`sensor${sensorNum}-toggle`).checked;
-    sendControlCommand(
-        'broodinnox/control/sensor',
-        `${sensorNum}:${enabled ? 'ON' : 'OFF'}`
-    );
-    updateSensorDisplay();
+    const toggle = document.getElementById(`sensor${sensorNum}-toggle`);
+    if (toggle) {
+        const enabled = toggle.checked;
+        sendControlCommand(
+            'broodinnox/control/sensor',
+            `${sensorNum}:${enabled ? 'ON' : 'OFF'}`
+        );
+        updateSensorDisplay();
+    }
 }
