@@ -176,6 +176,18 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'Broodinnox Dashboard',
+        version: '1.0.0',
+        mqtt: mqttClient ? mqttClient.connected : false,
+        clients: clients.size,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -198,6 +210,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📱 Dashboard available at: http://localhost:${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🖥️  Platform: ${process.platform}`);
+    console.log(`📦 Node version: ${process.version}`);
     connectMQTT();
 });
 
