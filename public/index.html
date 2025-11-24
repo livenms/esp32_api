@@ -211,10 +211,46 @@
                             <button class="btn btn-primary" id="inc-total-days">+</button>
                         </div>
                     </div>
+                    
+                    <!-- Start Date Controls -->
                     <div class="control-item">
                         <span class="control-label">Start Date</span>
-                        <span id="start-date-value">2025-10-11</span>
+                        <div class="date-controls">
+                            <input type="date" id="start-date-picker" class="date-picker">
+                            <button class="btn btn-primary" id="update-date-btn">Update</button>
+                        </div>
                     </div>
+                    <div class="manual-date-controls">
+                        <div class="date-control-group">
+                            <div class="date-control-label">Year</div>
+                            <div class="date-input-group">
+                                <button class="btn btn-primary btn-small" id="dec-start-year">-</button>
+                                <span id="start-year-value" class="date-value">2025</span>
+                                <button class="btn btn-primary btn-small" id="inc-start-year">+</button>
+                            </div>
+                        </div>
+                        <div class="date-control-group">
+                            <div class="date-control-label">Month</div>
+                            <div class="date-input-group">
+                                <button class="btn btn-primary btn-small" id="dec-start-month">-</button>
+                                <span id="start-month-value" class="date-value">10</span>
+                                <button class="btn btn-primary btn-small" id="inc-start-month">+</button>
+                            </div>
+                        </div>
+                        <div class="date-control-group">
+                            <div class="date-control-label">Day</div>
+                            <div class="date-input-group">
+                                <button class="btn btn-primary btn-small" id="dec-start-day">-</button>
+                                <span id="start-day-value" class="date-value">11</span>
+                                <button class="btn btn-primary btn-small" id="inc-start-day">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Current Start Date</span>
+                        <span id="current-start-date" class="date-display">2025-10-11</span>
+                    </div>
+                    
                     <div class="control-item">
                         <span class="control-label">Current Time</span>
                         <span id="current-time-value">--:--:--</span>
