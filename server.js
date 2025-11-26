@@ -12,21 +12,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// MQTT Configuration
+// In server.js, update MQTT_CONFIG to match your ESP32 topics
 const MQTT_CONFIG = {
-    broker: 'broker.hivemq.com',
+    broker: 'test.mosquitto.org', // Changed to match your ESP32
     port: 1883,
     topics: {
-        data: 'broodinnox/data',
-        relay: 'broodinnox/control/relay',
-        maxTemp: 'broodinnox/control/max_temp',
-        minTemp: 'broodinnox/control/min_temp',
-        totalDays: 'broodinnox/control/total_days',
-        sensorControl: 'broodinnox/control/sensor',
-        weeklyReduce: 'broodinnox/control/weekly_reduce',
-        reduceNow: 'broodinnox/control/reduce_now',
-        mode: 'broodinnox/control/mode',
-        startDate: 'broodinnox/control/start_date'
+        data: 'broodinnox/BROODINNOX-001/data',
+        relay: 'broodinnox/BROODINNOX-001/control/relay',
+        maxTemp: 'broodinnox/BROODINNOX-001/control/max_temp',
+        minTemp: 'broodinnox/BROODINNOX-001/control/min_temp',
+        totalDays: 'broodinnox/BROODINNOX-001/control/total_days',
+        sensorControl: 'broodinnox/BROODINNOX-001/control/sensor',
+        weeklyReduce: 'broodinnox/BROODINNOX-001/control/weekly_reduce',
+        reduceNow: 'broodinnox/BROODINNOX-001/control/reduce_now',
+        mode: 'broodinnox/BROODINNOX-001/control/mode',
+        startDate: 'broodinnox/BROODINNOX-001/control/start_date'
     }
 };
 
