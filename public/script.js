@@ -178,6 +178,16 @@ function handleServerMessage(message) {
 
 // Update dashboard with received data
 function updateDashboard(data) {
+    // Update device information
+    if (data.device_id) {
+        document.getElementById('device-id').textContent = data.device_id;
+        document.getElementById('footer-device-id').textContent = data.device_id;
+    }
+    
+    if (data.device_name) {
+        document.title = `Broodinnox - ${data.device_name}`;
+    }
+    
     // Update temperature
     if (data.temperature !== undefined) {
         document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
@@ -210,6 +220,11 @@ function updateDashboard(data) {
         const heaterStatus = document.getElementById('heater-status');
         heaterStatus.textContent = data.relay_status;
         heaterStatus.style.color = data.relay_status === 'ON' ? '#e74c3c' : '#2c3e50';
+    }
+    
+    // Update heater mode
+    if (data.relay_mode) {
+        document.getElementById('heater-mode').textContent = data.relay_mode;
     }
     
     // Update sensor data
@@ -252,6 +267,16 @@ function updateDashboard(data) {
     // Update system mode
     if (data.mode) {
         document.getElementById('system-status').textContent = data.mode;
+        // Update button states based on mode
+        const onlineBtn = document.getElementById('online-mode-btn');
+        const offlineBtn = document.getElementById('offline-mode-btn');
+        if (data.mode === 'ONLINE') {
+            onlineBtn.classList.add('active');
+            offlineBtn.classList.remove('active');
+        } else {
+            onlineBtn.classList.remove('active');
+            offlineBtn.classList.add('active');
+        }
     }
     
     // Update start date information
@@ -267,6 +292,13 @@ function updateDashboard(data) {
     
     // Update last update time
     document.getElementById('last-update-value').textContent = new Date().toLocaleTimeString();
+    
+    // Update WiFi status
+    if (data.rssi !== undefined) {
+        const wifiStatus = document.getElementById('wifi-status');
+        wifiStatus.textContent = `Connected (${data.rssi} dBm)`;
+        wifiStatus.style.color = data.rssi > -70 ? '#27ae60' : data.rssi > -80 ? '#f39c12' : '#e74c3c';
+    }
 }
 
 // Update temperature chart
@@ -432,25 +464,25 @@ function adjustTemperature(type, change) {
     
     currentElement.textContent = newValue;
     sendControlCommand(
-        type === 'max' ? 'broodinnox/control/max_temp' : 'broodinnox/control/min_temp',
+        `broodinnox/BROODINNOX-001/control/${type}_temp`,
         newValue.toString()
     );
 }
 
 function setHeaterMode(mode) {
-    sendControlCommand('broodinnox/control/relay', mode === 'AUTO' ? 'AUTO' : 'MANUAL');
+    sendControlCommand('broodinnox/BROODINNOX-001/control/relay', mode === 'AUTO' ? 'AUTO' : 'MANUAL');
 }
 
 function setHeaterState(state) {
-    sendControlCommand('broodinnox/control/relay', state);
+    sendControlCommand('broodinnox/BROODINNOX-001/control/relay', state);
 }
 
 function setSystemMode(mode) {
-    sendControlCommand('broodinnox/control/mode', mode);
+    sendControlCommand('broodinnox/BROODINNOX-001/control/mode', mode);
 }
 
 function forceReduceTemp() {
-    sendControlCommand('broodinnox/control/reduce_now', 'NOW');
+    sendControlCommand('broodinnox/BROODINNOX-001/control/reduce_now', 'NOW');
 }
 
 function toggleWeeklyReduce() {
@@ -458,7 +490,7 @@ function toggleWeeklyReduce() {
     if (toggle) {
         const enabled = toggle.checked;
         sendControlCommand(
-            'broodinnox/control/weekly_reduce',
+            'broodinnox/BROODINNOX-001/control/weekly_reduce',
             enabled ? 'ON' : 'OFF'
         );
     }
@@ -475,7 +507,7 @@ function adjustTotalDays(change) {
     if (newValue > 365) newValue = 365;
     
     currentElement.textContent = newValue;
-    sendControlCommand('broodinnox/control/total_days', newValue.toString());
+    sendControlCommand('broodinnox/BROODINNOX-001/control/total_days', newValue.toString());
 }
 
 function toggleSensor(sensorNum) {
@@ -483,7 +515,7 @@ function toggleSensor(sensorNum) {
     if (toggle) {
         const enabled = toggle.checked;
         sendControlCommand(
-            'broodinnox/control/sensor',
+            'broodinnox/BROODINNOX-001/control/sensor',
             `${sensorNum}:${enabled ? 'ON' : 'OFF'}`
         );
         updateSensorDisplay();
@@ -496,7 +528,7 @@ function updateStartDate() {
     const selectedDate = datePicker.value;
     
     if (selectedDate) {
-        sendControlCommand('broodinnox/control/start_date', selectedDate);
+        sendControlCommand('broodinnox/BROODINNOX-001/control/start_date', selectedDate);
         document.getElementById('update-date-btn').disabled = true;
         showNotification('Start date updated successfully', 'success');
     } else {
@@ -535,6 +567,6 @@ function adjustStartDate(type, change) {
     const day = document.getElementById('start-day-value').textContent.padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
     
-    sendControlCommand('broodinnox/control/start_date', formattedDate);
+    sendControlCommand('broodinnox/BROODINNOX-001/control/start_date', formattedDate);
     showNotification('Start date updated successfully', 'success');
 }
