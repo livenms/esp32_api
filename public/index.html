@@ -31,6 +31,10 @@
                     <div class="status-value" id="system-status">Online</div>
                     <div class="status-label">System Status</div>
                 </div>
+                <div class="status-item">
+                    <div class="status-value" id="device-id">BROODINNOX-001</div>
+                    <div class="status-label">Device ID</div>
+                </div>
             </div>
         </header>
         
@@ -45,7 +49,7 @@
         </div>
         
         <div class="dashboard">
-            <!-- Temperature Card -->
+            <!-- Temperature Control Card -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Temperature Control</h2>
@@ -68,6 +72,10 @@
                         <div class="range-item">
                             <span class="range-label">Heater:</span>
                             <span class="range-value" id="heater-status">OFF</span>
+                        </div>
+                        <div class="range-item">
+                            <span class="range-label">Mode:</span>
+                            <span class="range-value" id="heater-mode">AUTO</span>
                         </div>
                     </div>
                 </div>
@@ -271,6 +279,10 @@
                             <span class="control-label">MQTT Status</span>
                             <span id="mqtt-status">Connected</span>
                         </div>
+                        <div class="control-item">
+                            <span class="control-label">WiFi Status</span>
+                            <span id="wifi-status">Connected</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -278,7 +290,7 @@
         
         <footer>
             <p>Broodinnox Smart Brooding System &copy; 2025 | Enhanced MQTT Version</p>
-            <p>Deployed on Render | Real-time Dashboard</p>
+            <p>Device: <span id="footer-device-id">BROODINNOX-001</span> | Real-time Dashboard</p>
         </footer>
     </div>
 
