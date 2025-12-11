@@ -1,13 +1,14 @@
 services:
   - type: web
-    name: broodinnox-dashboard
+    name: broodinnox-web
     env: node
-    plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-    branches:
-      - pattern: main
-        name: Production
+      - key: PORT
+        value: 3000
+      - key: MQTT_BROKER
+        value: wss://broker.hivemq.com:8884/mqtt
+    healthCheckPath: /api/status
