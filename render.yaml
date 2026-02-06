@@ -1,14 +1,21 @@
 services:
   - type: web
-    name: broodinnox-web
+    name: my-web-app
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      - key: MQTT_BROKER
-        value: wss://broker.hivemq.com:8884/mqtt
-    healthCheckPath: /api/status
+    healthCheckPath: /
+    autoDeploy: true
+    regions:
+      - oregon
+    plan: free
+
+databases:
+  - name: mywebappdb
+    databaseName: mywebapp
+    plan: free
