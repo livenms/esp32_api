@@ -1,41 +1,66 @@
-const express = require("express");
-const path = require("path");
-const cors = require("cors");
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS for cross-origin requests
-app.use(cors());
-
-// Parse JSON requests
+// Middleware
 app.use(express.json());
+app.use(express.static('public'));
 
-// Serve static files (web page)
-app.use(express.static(path.join(__dirname, "public")));
+// API Routes
+app.get('/api/dashboard', (req, res) => {
+    res.json({
+        users: 245,
+        revenue: '$15,432',
+        growth: '+12.5%',
+        activeProjects: 18,
+        serverStatus: 'online',
+        uptime: '99.9%',
+        lastUpdated: new Date().toISOString()
+    });
+});
 
-// API endpoint to forward commands to ROS 2
-app.post("/cmd_vel", async (req, res) => {
-    const { linear = 0, angular = 0 } = req.body;
+app.get('/api/files', (req, res) => {
+    const files = [
+        { name: 'server.js', type: 'js', size: '1.2KB' },
+        { name: 'package.json', type: 'json', size: '0.8KB' },
+        { name: 'render.yaml', type: 'yaml', size: '0.5KB' },
+        { name: '.node-version', type: 'config', size: '0.1KB' },
+        { name: 'public/index.html', type: 'html', size: '1.5KB' },
+        { name: 'public/style.css', type: 'css', size: '2.1KB' },
+        { name: 'public/script.js', type: 'js', size: '3.2KB' },
+        { name: 'public/dashboard.js', type: 'js', size: '4.8KB' }
+    ];
+    res.json(files);
+});
 
-    // Forward to ROS 2 node (replace with your ROS 2 node URL)
-    const rosNodeUrl = "http://<robot_ip>:5000/cmd_vel";
-
-    try {
-        const response = await fetch(rosNodeUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ linear, angular })
+app.post('/api/deploy', (req, res) => {
+    const { action } = req.body;
+    
+    if (action === 'restart') {
+        res.json({ 
+            success: true, 
+            message: 'Server restart initiated',
+            timestamp: new Date().toISOString()
         });
-
-        const data = await response.json();
-        res.json(data);
-    } catch (err) {
-        console.error("Error sending to ROS 2 node:", err);
-        res.status(500).json({ error: "Failed to send to ROS 2 node" });
+    } else {
+        res.json({ 
+            success: true, 
+            message: 'Deployment action completed',
+            timestamp: new Date().toISOString()
+        });
     }
 });
 
+// Serve main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
 });
