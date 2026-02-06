@@ -15,7 +15,8 @@ services:
       - oregon
     plan: free
 
-databases:
-  - name: mywebappdb
-    databaseName: mywebapp
-    plan: free
+# Database configuration (optional)
+# databases:
+#   - name: mywebappdb
+#     databaseName: mywebapp
+#     plan: free
