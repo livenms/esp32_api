@@ -1,229 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Dashboard - File Explorer</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Broodinnox – Smart Brooding Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-code"></i>
-                <h1>Project Explorer</h1>
-            </div>
-            <div class="header-info">
-                <div class="file-count">
-                    <i class="fas fa-file"></i>
-                    <span id="totalFiles">8</span> files
-                </div>
-                <div class="server-status">
-                    <div class="status-dot online"></div>
-                    <span>Server Online</span>
-                </div>
-            </div>
-        </header>
 
-        <div class="main-content">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-info-circle"></i> Project Info</h3>
-                    <div class="project-details">
-                        <div class="detail-item">
-                            <span class="detail-label">Name:</span>
-                            <span class="detail-value">my-web-app</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Version:</span>
-                            <span class="detail-value">1.0.0</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Type:</span>
-                            <span class="detail-value">Node.js Web App</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Port:</span>
-                            <span class="detail-value">3000</span>
-                        </div>
-                    </div>
-                </div>
+  <div class="container">
+    <header>
+      <h1>Broodinnox <small>BROODIINNOX-001</small></h1>
+      <div class="status-bar">
+        <span id="connection">MQTT • Live</span>
+        <span id="device-state">ENABLED</span>
+      </div>
+    </header>
 
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
-                    <div class="stats-list">
-                        <div class="stat-item">
-                            <i class="fas fa-folder"></i>
-                            <span>Folders: <strong id="folderCount">1</strong></span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-file-code"></i>
-                            <span>JS Files: <strong id="jsCount">3</strong></span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-cog"></i>
-                            <span>Config Files: <strong id="configCount">3</strong></span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-database"></i>
-                            <span>Total Size: <strong id="totalSize">15.2KB</strong></span>
-                        </div>
-                    </div>
-                </div>
+    <main>
+      <!-- LCD simulation -->
+      <div class="lcd" id="lcd">
+        <div class="line" id="line0">DAY : 18 / 30                </div>
+        <div class="line" id="line1">TIME : 14:37:22              </div>
+        <div class="line warning" id="line2">TEMP : 31.4°C EVE      </div>
+        <div class="line" id="line3">HEAT : AUT ON  42m     ERR   </div>
+      </div>
 
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-rocket"></i> Quick Actions</h3>
-                    <div class="action-buttons">
-                        <button class="action-btn" onclick="refreshFiles()">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                        <button class="action-btn" onclick="viewTerminal()">
-                            <i class="fas fa-terminal"></i> Terminal
-                        </button>
-                        <button class="action-btn" onclick="deployProject()">
-                            <i class="fas fa-cloud-upload-alt"></i> Deploy
-                        </button>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="content">
-                <div class="content-header">
-                    <h2><i class="fas fa-folder-open"></i> File Explorer</h2>
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="Search files...">
-                    </div>
-                </div>
-
-                <!-- Folder Structure -->
-                <div class="folder-structure">
-                    <div class="folder-item" onclick="toggleFolder('public')">
-                        <div class="folder-header">
-                            <i class="fas fa-folder"></i>
-                            <span>public/</span>
-                            <span class="folder-size">Folder</span>
-                        </div>
-                        <div class="folder-contents" id="public-folder">
-                            <!-- Contents loaded by JavaScript -->
-                        </div>
-                    </div>
-
-                    <div class="file-list" id="root-files">
-                        <!-- Root files loaded by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- File Content Viewer -->
-                <div class="file-viewer" id="fileViewer">
-                    <div class="viewer-header">
-                        <h3 id="fileName">Select a file to view content</h3>
-                        <button class="close-btn" onclick="closeFileViewer()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="viewer-content">
-                        <pre><code id="fileContent" class="hljs"></code></pre>
-                    </div>
-                </div>
-
-                <!-- Dashboard Stats -->
-                <div class="dashboard-section">
-                    <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
-                    <div class="stats-cards">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-server"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="serverStatus">Online</h4>
-                                <p>Server Status</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="uptime">99.9%</h4>
-                                <p>Uptime</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="activeUsers">0</h4>
-                                <p>Active Users</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-project-diagram"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="activeProjects">0</h4>
-                                <p>Projects</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+      <!-- Quick status cards -->
+      <div class="status-grid">
+        <div class="card">
+          <div class="label">Effective min</div>
+          <div class="value" id="eff-min">32 °C</div>
         </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-info">
-                <span><i class="fas fa-code-branch"></i> Node.js v<span id="nodeVersion">18.17.1</span></span>
-                <span><i class="fas fa-plug"></i> Port: <strong>3000</strong></span>
-                <span><i class="fas fa-hdd"></i> Memory: <span id="memoryUsage">--</span> MB</span>
-            </div>
-            <div class="footer-actions">
-                <button class="footer-btn" onclick="restartServer()">
-                    <i class="fas fa-redo"></i> Restart
-                </button>
-                <button class="footer-btn" onclick="viewLogs()">
-                    <i class="fas fa-scroll"></i> Logs
-                </button>
-                <button class="footer-btn" onclick="exportStructure()">
-                    <i class="fas fa-download"></i> Export
-                </button>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Terminal Modal -->
-    <div class="modal" id="terminalModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-terminal"></i> System Terminal</h3>
-                <button class="modal-close" onclick="closeTerminal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="terminal" id="terminal">
-                    <div class="terminal-line">$ npm start</div>
-                    <div class="terminal-line">> my-web-app@1.0.0 start</div>
-                    <div class="terminal-line">> node server.js</div>
-                    <div class="terminal-line">🚀 Server running on http://localhost:3000</div>
-                    <div class="terminal-line">📁 Serving static files from: /public</div>
-                    <div class="terminal-line">🌐 API available at: http://localhost:3000/api</div>
-                </div>
-                <div class="terminal-input">
-                    <input type="text" id="terminalInput" placeholder="Enter command...">
-                    <button onclick="executeCommand()">Execute</button>
-                </div>
-            </div>
+        <div class="card">
+          <div class="label">Mode</div>
+          <div class="value" id="mode">Evening cycle</div>
         </div>
-    </div>
+        <div class="card">
+          <div class="label">Heater</div>
+          <div class="value big" id="heater-state">ON</div>
+        </div>
+      </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script src="script.js"></script>
-    <script src="dashboard.js"></script>
+      <!-- Sensors -->
+      <div class="sensors">
+        <div class="sensor">
+          <span>DHT1</span>
+          <strong id="t1">32.1 °C</strong>
+          <span class="status on">ON</span>
+        </div>
+        <div class="sensor">
+          <span>DHT2</span>
+          <strong id="t2">30.8 °C</strong>
+          <span class="status on">ON</span>
+        </div>
+        <div class="sensor">
+          <span>DHT3</span>
+          <strong id="t3">31.9 °C</strong>
+          <span class="status on">ON</span>
+        </div>
+        <div class="sensor error">
+          <span>DHT4</span>
+          <strong id="t4">ERR</strong>
+          <span class="status off">OFF</span>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <small>Broodinnox SMS + MQTT • Evening safety override active</small>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
