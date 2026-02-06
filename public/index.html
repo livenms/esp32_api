@@ -3,75 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Broodinnox – Smart Brooding Monitor</title>
+  <title>Broodinnox Dashboard</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>Broodinnox <small>BROODIINNOX-001</small></h1>
-      <div class="status-bar">
-        <span id="connection">MQTT • Live</span>
-        <span id="device-state">ENABLED</span>
+      <h1>Broodinnox Smart Brooding</h1>
+      <p id="device-id">BROODIINNOX-001</p>
+      <div class="status">
+        <span>Connection: <strong id="conn-status">Disconnected</strong></span>
+        <span>Device: <strong id="device-enabled">Unknown</strong></span>
       </div>
     </header>
 
     <main>
-      <!-- LCD simulation -->
-      <div class="lcd" id="lcd">
-        <div class="line" id="line0">DAY : 18 / 30                </div>
-        <div class="line" id="line1">TIME : 14:37:22              </div>
-        <div class="line warning" id="line2">TEMP : 31.4°C EVE      </div>
-        <div class="line" id="line3">HEAT : AUT ON  42m     ERR   </div>
-      </div>
-
-      <!-- Quick status cards -->
-      <div class="status-grid">
+      <section class="main-info">
         <div class="card">
-          <div class="label">Effective min</div>
-          <div class="value" id="eff-min">32 °C</div>
+          <div class="label">Current Day</div>
+          <div class="value" id="day">— / —</div>
         </div>
         <div class="card">
-          <div class="label">Mode</div>
-          <div class="value" id="mode">Evening cycle</div>
+          <div class="label">Average Temp</div>
+          <div class="value big" id="temp">—.— °C</div>
         </div>
         <div class="card">
           <div class="label">Heater</div>
-          <div class="value big" id="heater-state">ON</div>
+          <div class="value big state" id="heater">OFF</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Sensors -->
-      <div class="sensors">
-        <div class="sensor">
-          <span>DHT1</span>
-          <strong id="t1">32.1 °C</strong>
-          <span class="status on">ON</span>
+      <section class="extra-info">
+        <div class="card small">
+          <div class="label">Mode</div>
+          <div id="mode">—</div>
         </div>
-        <div class="sensor">
-          <span>DHT2</span>
-          <strong id="t2">30.8 °C</strong>
-          <span class="status on">ON</span>
+        <div class="card small">
+          <div class="label">Evening Phase</div>
+          <div id="evening-phase">—</div>
         </div>
-        <div class="sensor">
-          <span>DHT3</span>
-          <strong id="t3">31.9 °C</strong>
-          <span class="status on">ON</span>
+      </section>
+
+      <section class="sensors">
+        <h3>Sensors</h3>
+        <div class="sensor-grid">
+          <div>DHT1: <span id="t1">—</span> °C</div>
+          <div>DHT2: <span id="t2">—</span> °C</div>
+          <div>DHT3: <span id="t3">—</span> °C</div>
+          <div>DHT4: <span id="t4">—</span> °C</div>
         </div>
-        <div class="sensor error">
-          <span>DHT4</span>
-          <strong id="t4">ERR</strong>
-          <span class="status off">OFF</span>
-        </div>
+      </section>
+
+      <div id="alert" class="alert hidden">
+        Waiting for data from device...
       </div>
     </main>
 
     <footer>
-      <small>Broodinnox SMS + MQTT • Evening safety override active</small>
+      <small>Hosted on Render • Data via MQTT • Last update: <span id="last-update">never</span></small>
     </footer>
   </div>
 
