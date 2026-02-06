@@ -3,613 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project File Explorer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 900px;
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 25px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            font-weight: 600;
-        }
-
-        .file-count {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-
-        .main-content {
-            display: flex;
-            min-height: 500px;
-        }
-
-        .sidebar {
-            width: 300px;
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
-            padding: 25px;
-        }
-
-        .project-info h2 {
-            color: #1e293b;
-            font-size: 20px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .project-desc {
-            color: #64748b;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 25px;
-        }
-
-        .file-stats {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .stat-item:last-child {
-            margin-bottom: 0;
-            border-bottom: none;
-        }
-
-        .stat-label {
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .stat-value {
-            color: #1e293b;
-            font-weight: 600;
-        }
-
-        .file-explorer {
-            flex: 1;
-            padding: 25px;
-        }
-
-        .explorer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .explorer-header h2 {
-            color: #1e293b;
-            font-size: 22px;
-        }
-
-        .search-box {
-            background: #f1f5f9;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 10px;
-            width: 200px;
-            font-size: 14px;
-            color: #1e293b;
-        }
-
-        .folder-structure {
-            background: white;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            overflow: hidden;
-        }
-
-        .structure-item {
-            display: flex;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid #f1f5f9;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .structure-item:hover {
-            background: #f8fafc;
-        }
-
-        .structure-item.folder {
-            background: #f0f9ff;
-            border-left: 4px solid #3b82f6;
-        }
-
-        .icon {
-            margin-right: 12px;
-            font-size: 18px;
-        }
-
-        .folder-icon {
-            color: #3b82f6;
-        }
-
-        .file-icon {
-            color: #64748b;
-        }
-
-        .js-icon {
-            color: #f59e0b;
-        }
-
-        .html-icon {
-            color: #ef4444;
-        }
-
-        .css-icon {
-            color: #3b82f6;
-        }
-
-        .config-icon {
-            color: #10b981;
-        }
-
-        .file-name {
-            color: #1e293b;
-            font-size: 15px;
-            flex: 1;
-        }
-
-        .file-size {
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .file-content {
-            display: none;
-            margin-top: 20px;
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            color: #e2e8f0;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .file-content.active {
-            display: block;
-        }
-
-        .footer {
-            background: #f8fafc;
-            padding: 20px 30px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            color: #64748b;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #2563eb;
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #475569;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e1;
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid #e2e8f0;
-            }
-        }
-    </style>
+    <title>Web Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📁 Project File Explorer</h1>
-            <div class="file-count">
-                📄 8 files in project
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <h1>DevDash</h1>
             </div>
-        </div>
-
-        <div class="main-content">
-            <div class="sidebar">
-                <div class="project-info">
-                    <h2>Project Information</h2>
-                    <p class="project-desc">
-                        A Node.js web application with Express backend and static frontend files.
-                        This structure is typical for modern web applications deployed on cloud platforms.
-                    </p>
-                </div>
-
-                <div class="file-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Total Files:</span>
-                        <span class="stat-value">8</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Folders:</span>
-                        <span class="stat-value">1</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">JavaScript Files:</span>
-                        <span class="stat-value">3</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Configuration Files:</span>
-                        <span class="stat-value">3</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Last Updated:</span>
-                        <span class="stat-value">Today</span>
-                    </div>
-                </div>
+            
+            <nav class="nav-menu">
+                <ul>
+                    <li class="active"><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="#"><i class="fas fa-folder"></i> Files</a></li>
+                    <li><a href="#"><i class="fas fa-server"></i> Server</a></li>
+                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="#"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                </ul>
+            </nav>
+            
+            <div class="server-status">
+                <div class="status-indicator online"></div>
+                <span>Server Online</span>
             </div>
+        </aside>
 
-            <div class="file-explorer">
-                <div class="explorer-header">
-                    <h2>📂 Folder Structure</h2>
-                    <input type="text" class="search-box" placeholder="Search files...">
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search files, logs, settings...">
                 </div>
+                <div class="user-info">
+                    <span>Welcome, Developer</span>
+                    <div class="avatar">D</div>
+                </div>
+            </header>
 
-                <div class="folder-structure">
-                    <div class="structure-item folder">
-                        <span class="icon folder-icon">📁</span>
-                        <span class="file-name">public/</span>
-                        <span class="file-size">Folder</span>
+            <!-- Dashboard Stats -->
+            <section class="dashboard-stats">
+                <h2><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon users">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="userCount">0</h3>
+                            <p>Active Users</p>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i> 12.5%
+                        </div>
                     </div>
                     
-                    <div class="structure-item">
-                        <span class="icon html-icon">📄</span>
-                        <span class="file-name">index.html</span>
-                        <span class="file-size">1.2 KB</span>
+                    <div class="stat-card">
+                        <div class="stat-icon revenue">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="revenue">$0</h3>
+                            <p>Revenue</p>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i> 8.2%
+                        </div>
                     </div>
                     
-                    <div class="structure-item">
-                        <span class="icon js-icon">📄</span>
-                        <span class="file-name">script.js</span>
-                        <span class="file-size">4.8 KB</span>
+                    <div class="stat-card">
+                        <div class="stat-icon projects">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="projectCount">0</h3>
+                            <p>Active Projects</p>
+                        </div>
+                        <div class="stat-trend down">
+                            <i class="fas fa-arrow-down"></i> 2.1%
+                        </div>
                     </div>
                     
-                    <div class="structure-item">
-                        <span class="icon css-icon">📄</span>
-                        <span class="file-name">style.css</span>
-                        <span class="file-size">2.1 KB</span>
-                    </div>
-                    
-                    <div class="structure-item">
-                        <span class="icon js-icon">📄</span>
-                        <span class="file-name">dashboard.js</span>
-                        <span class="file-size">7.3 KB</span>
-                    </div>
-                    
-                    <div class="structure-item">
-                        <span class="icon config-icon">📄</span>
-                        <span class="file-name">package.json</span>
-                        <span class="file-size">0.9 KB</span>
-                    </div>
-                    
-                    <div class="structure-item">
-                        <span class="icon js-icon">📄</span>
-                        <span class="file-name">server.js</span>
-                        <span class="file-size">3.5 KB</span>
-                    </div>
-                    
-                    <div class="structure-item">
-                        <span class="icon config-icon">📄</span>
-                        <span class="file-name">render.yaml</span>
-                        <span class="file-size">0.5 KB</span>
-                    </div>
-                    
-                    <div class="structure-item">
-                        <span class="icon config-icon">📄</span>
-                        <span class="file-name">.node-version</span>
-                        <span class="file-size">0.1 KB</span>
+                    <div class="stat-card">
+                        <div class="stat-icon uptime">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="uptime">0%</h3>
+                            <p>Server Uptime</p>
+                        </div>
+                        <div class="stat-trend stable">
+                            <i class="fas fa-minus"></i> Stable
+                        </div>
                     </div>
                 </div>
+            </section>
 
-                <div id="fileContent" class="file-content">
-                    // File content will appear here
+            <!-- File Explorer -->
+            <section class="file-explorer">
+                <div class="section-header">
+                    <h2><i class="fas fa-folder-open"></i> File Explorer</h2>
+                    <button class="btn" id="refreshFiles">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                 </div>
-            </div>
-        </div>
+                
+                <div class="files-grid" id="filesContainer">
+                    <!-- Files will be loaded here by JavaScript -->
+                </div>
+            </section>
 
-        <div class="footer">
-            <div class="project-status">
-                Status: <span style="color: #10b981; font-weight: 600;">● Active</span>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-secondary" onclick="refreshFiles()">
-                    ↻ Refresh
-                </button>
-                <button class="btn btn-primary" onclick="downloadStructure()">
-                    ⬇ Download Structure
-                </button>
-            </div>
-        </div>
+            <!-- Deployment Controls -->
+            <section class="deployment">
+                <h2><i class="fas fa-rocket"></i> Deployment Controls</h2>
+                
+                <div class="deploy-controls">
+                    <button class="btn deploy-btn" id="deployBtn">
+                        <i class="fas fa-cloud-upload-alt"></i> Deploy Now
+                    </button>
+                    <button class="btn restart-btn" id="restartBtn">
+                        <i class="fas fa-redo"></i> Restart Server
+                    </button>
+                    <button class="btn logs-btn" id="viewLogs">
+                        <i class="fas fa-scroll"></i> View Logs
+                    </button>
+                </div>
+                
+                <div class="deploy-status">
+                    <p><i class="fas fa-info-circle"></i> Last deployment: <span id="lastDeploy">Never</span></p>
+                    <p><i class="fas fa-check-circle"></i> Status: <span class="status-badge online">Ready</span></p>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <script>
-        const fileContents = {
-            'index.html': `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My App</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="app">
-        <h1>Welcome to My App</h1>
-        <div id="content"></div>
-    </div>
     <script src="script.js"></script>
-</body>
-</html>`,
-
-            'script.js': `// Main application script
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('App loaded successfully!');
-    
-    // Initialize app
-    initApp();
-    
-    // Load data
-    fetchData();
-});
-
-function initApp() {
-    // App initialization logic
-    console.log('Initializing app...');
-}
-
-async function fetchData() {
-    try {
-        const response = await fetch('/api/data');
-        const data = await response.json();
-        displayData(data);
-    } catch (error) {
-        console.error('Error fetching data:', error);
-    }
-}`,
-
-            'style.css': `/* Main stylesheet */
-:root {
-    --primary-color: #4f46e5;
-    --secondary-color: #7c3aed;
-    --text-color: #1e293b;
-    --bg-color: #f8fafc;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-color);
-    color: var(--text-color);
-    line-height: 1.6;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}`,
-
-            'server.js': `const express = require('express');
-const path = require('path');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(express.json());
-app.use(express.static('public'));
-
-// Routes
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/api/data', (req, res) => {
-    res.json({
-        message: 'Hello from the server!',
-        timestamp: new Date().toISOString(),
-        status: 'active'
-    });
-});
-
-// Start server
-app.listen(PORT, () => {
-    console.log(\`Server running on port \${PORT}\`);
-});`,
-
-            'package.json': `{
-  "name": "my-web-app",
-  "version": "1.0.0",
-  "description": "A modern web application",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "test": "echo \\"Error: no test specified\\" && exit 1"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
-}`,
-
-            'render.yaml': `services:
-  - type: web
-    name: my-web-app
-    env: node
-    buildCommand: npm install
-    startCommand: node server.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-    autoDeploy: true`,
-
-            '.node-version': '18.17.1'
-        };
-
-        // Add click event to file items
-        document.querySelectorAll('.structure-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const fileName = this.querySelector('.file-name').textContent;
-                const fileContentEl = document.getElementById('fileContent');
-                
-                if (fileName.includes('/')) {
-                    // It's a folder
-                    fileContentEl.textContent = `📁 This is a folder containing files:\n- index.html\n- script.js\n- style.css\n- dashboard.js`;
-                } else if (fileContents[fileName]) {
-                    // Show file content
-                    fileContentEl.textContent = fileContents[fileName];
-                } else {
-                    fileContentEl.textContent = `// Content for ${fileName} would appear here`;
-                }
-                
-                fileContentEl.classList.add('active');
-                
-                // Update active state
-                document.querySelectorAll('.structure-item').forEach(i => {
-                    i.style.background = '';
-                });
-                this.style.background = '#f0f9ff';
-            });
-        });
-
-        // Search functionality
-        document.querySelector('.search-box').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('.structure-item').forEach(item => {
-                const fileName = item.querySelector('.file-name').textContent.toLowerCase();
-                if (fileName.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-
-        // Action functions
-        function refreshFiles() {
-            alert('Refreshing file list...');
-            document.querySelectorAll('.structure-item').forEach(item => {
-                item.style.display = 'flex';
-            });
-            document.querySelector('.search-box').value = '';
-            document.getElementById('fileContent').classList.remove('active');
-        }
-
-        function downloadStructure() {
-            const structure = `Project Structure:
-├── public/
-│   ├── dashboard.js
-│   ├── index.html
-│   ├── script.js
-│   └── style.css
-├── .node-version
-├── package.json
-├── render.yaml
-└── server.js`;
-            
-            const blob = new Blob([structure], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'folder-structure.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            alert('Folder structure downloaded!');
-        }
-
-        // Initialize with first file selected
-        document.querySelector('.structure-item:nth-child(2)').click();
-    </script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
