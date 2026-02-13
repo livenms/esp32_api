@@ -1,71 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Broodinnox Dashboard</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broodinnox Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="brand">
+                    <div class="brand-icon">🐣</div>
+                    <div class="brand-text">
+                        <h1>BROODINNOX</h1>
+                        <p class="subtitle">Smart Brooding System</p>
+                    </div>
+                </div>
+                
+                <div class="header-status">
+                    <div class="status-badge" id="deviceStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Connecting...</span>
+                    </div>
+                    <div class="device-info">
+                        <span class="device-id" id="deviceId">-</span>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-  <div class="container">
-    <header>
-      <h1>Broodinnox Smart Brooding</h1>
-      <p id="device-id">BROODIINNOX-001</p>
-      <div class="status">
-        <span>Connection: <strong id="conn-status">Disconnected</strong></span>
-        <span>Device: <strong id="device-enabled">Unknown</strong></span>
-      </div>
-    </header>
+        <!-- Main Grid -->
+        <main class="dashboard-main">
+            <!-- Left Column - Stats & Temperature -->
+            <div class="column column-left">
+                <!-- Temperature Card -->
+                <div class="card card-temperature">
+                    <div class="card-header">
+                        <h2>Current Temperature</h2>
+                        <div class="temp-badge" id="tempStatus">NORMAL</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="temp-display">
+                            <div class="temp-main">
+                                <span class="temp-value" id="currentTemp">--</span>
+                                <span class="temp-unit">°C</span>
+                            </div>
+                            <div class="temp-range">
+                                <div class="range-item">
+                                    <span class="range-label">MIN</span>
+                                    <span class="range-value" id="minTemp">--</span>
+                                </div>
+                                <div class="range-divider"></div>
+                                <div class="range-item">
+                                    <span class="range-label">MAX</span>
+                                    <span class="range-value" id="maxTemp">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="sensor-grid">
+                            <div class="sensor-item" id="sensor1">
+                                <span class="sensor-label">DHT1</span>
+                                <span class="sensor-value">--°C</span>
+                            </div>
+                            <div class="sensor-item" id="sensor2">
+                                <span class="sensor-label">DHT2</span>
+                                <span class="sensor-value">--°C</span>
+                            </div>
+                            <div class="sensor-item" id="sensor3">
+                                <span class="sensor-label">DHT3</span>
+                                <span class="sensor-value">--°C</span>
+                            </div>
+                            <div class="sensor-item" id="sensor4">
+                                <span class="sensor-label">DHT4</span>
+                                <span class="sensor-value">--°C</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    <main>
-      <section class="main-info">
-        <div class="card">
-          <div class="label">Current Day</div>
-          <div class="value" id="day">— / —</div>
-        </div>
-        <div class="card">
-          <div class="label">Average Temp</div>
-          <div class="value big" id="temp">—.— °C</div>
-        </div>
-        <div class="card">
-          <div class="label">Heater</div>
-          <div class="value big state" id="heater">OFF</div>
-        </div>
-      </section>
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Cycle Day</span>
+                            <span class="stat-value">
+                                <span id="currentDay">0</span>/<span id="totalDays">0</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Heater Status</span>
+                            <span class="stat-value" id="relayStatus">OFF</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⚙️</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Relay Mode</span>
+                            <span class="stat-value" id="relayMode">AUTO</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🐔</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Animal Type</span>
+                            <span class="stat-value" id="animalType">-</span>
+                        </div>
+                    </div>
+                </div>
 
-      <section class="extra-info">
-        <div class="card small">
-          <div class="label">Mode</div>
-          <div id="mode">—</div>
-        </div>
-        <div class="card small">
-          <div class="label">Evening Phase</div>
-          <div id="evening-phase">—</div>
-        </div>
-      </section>
+                <!-- Chart Card -->
+                <div class="card card-chart">
+                    <div class="card-header">
+                        <h2>Temperature History</h2>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" data-range="1h">1H</button>
+                            <button class="chart-btn" data-range="6h">6H</button>
+                            <button class="chart-btn" data-range="24h">24H</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
-      <section class="sensors">
-        <h3>Sensors</h3>
-        <div class="sensor-grid">
-          <div>DHT1: <span id="t1">—</span> °C</div>
-          <div>DHT2: <span id="t2">—</span> °C</div>
-          <div>DHT3: <span id="t3">—</span> °C</div>
-          <div>DHT4: <span id="t4">—</span> °C</div>
-        </div>
-      </section>
+            <!-- Right Column - Controls -->
+            <div class="column column-right">
+                <!-- Heater Control Card -->
+                <div class="card card-control">
+                    <div class="card-header">
+                        <h2>Heater Control</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="control-buttons">
+                            <button class="control-btn btn-on" onclick="controlRelay('ON')">
+                                <span class="btn-icon">🔥</span>
+                                <span class="btn-label">Turn ON</span>
+                            </button>
+                            <button class="control-btn btn-off" onclick="controlRelay('OFF')">
+                                <span class="btn-icon">❄️</span>
+                                <span class="btn-label">Turn OFF</span>
+                            </button>
+                            <button class="control-btn btn-auto" onclick="controlRelay('AUTO')">
+                                <span class="btn-icon">⚙️</span>
+                                <span class="btn-label">Auto Mode</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-      <div id="alert" class="alert hidden">
-        Waiting for data from device...
-      </div>
-    </main>
+                <!-- Temperature Settings Card -->
+                <div class="card card-settings">
+                    <div class="card-header">
+                        <h2>Temperature Settings</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="setting-group">
+                            <label class="setting-label">
+                                <span>Maximum Temperature</span>
+                                <span class="setting-value" id="maxTempDisplay">36°C</span>
+                            </label>
+                            <input type="range" class="setting-slider" id="maxTempSlider" 
+                                   min="25" max="45" value="36" step="1">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label class="setting-label">
+                                <span>Minimum Temperature</span>
+                                <span class="setting-value" id="minTempDisplay">32°C</span>
+                            </label>
+                            <input type="range" class="setting-slider" id="minTempSlider" 
+                                   min="20" max="40" value="32" step="1">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label class="setting-label">
+                                <span>Total Cycle Days</span>
+                                <span class="setting-value" id="totalDaysDisplay">30 days</span>
+                            </label>
+                            <input type="range" class="setting-slider" id="totalDaysSlider" 
+                                   min="1" max="90" value="30" step="1">
+                        </div>
+                        
+                        <button class="apply-btn" onclick="applySettings()">
+                            Apply Settings
+                        </button>
+                    </div>
+                </div>
 
-    <footer>
-      <small>Hosted on Render • Data via MQTT • Last update: <span id="last-update">never</span></small>
-    </footer>
-  </div>
+                <!-- Advanced Settings Card -->
+                <div class="card card-advanced">
+                    <div class="card-header">
+                        <h2>Advanced Settings</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="toggle-group">
+                            <label class="toggle-label">
+                                <span>Weekly Temperature Reduction</span>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="weeklyReduce" checked>
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <button class="action-btn" onclick="reduceNow()">
+                            <span class="btn-icon">📉</span>
+                            <span class="btn-label">Reduce Temperature Now</span>
+                        </button>
+                        
+                        <div class="sensor-toggles">
+                            <h3>Sensor Management</h3>
+                            <div class="sensor-toggle-grid">
+                                <label class="sensor-toggle">
+                                    <input type="checkbox" id="s1Toggle" checked onchange="toggleSensor(1, this.checked)">
+                                    <span>DHT1</span>
+                                </label>
+                                <label class="sensor-toggle">
+                                    <input type="checkbox" id="s2Toggle" checked onchange="toggleSensor(2, this.checked)">
+                                    <span>DHT2</span>
+                                </label>
+                                <label class="sensor-toggle">
+                                    <input type="checkbox" id="s3Toggle" checked onchange="toggleSensor(3, this.checked)">
+                                    <span>DHT3</span>
+                                </label>
+                                <label class="sensor-toggle">
+                                    <input type="checkbox" id="s4Toggle" checked onchange="toggleSensor(4, this.checked)">
+                                    <span>DHT4</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-  <script src="script.js"></script>
+                <!-- System Info Card -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h2>System Information</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Mode</span>
+                                <span class="info-value" id="systemMode">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Error Status</span>
+                                <span class="info-value" id="errorStatus">OK</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Last Update</span>
+                                <span class="info-value" id="lastUpdate">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Device Name</span>
+                                <span class="info-value" id="deviceName">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span class="toast-message"></span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
