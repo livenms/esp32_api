@@ -1,272 +1,302 @@
 const express = require('express');
+const mqtt = require('mqtt');
+const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(express.json());
-app.use(express.static('public'));
-
-// API Routes
-app.get('/api/dashboard', (req, res) => {
-    res.json({
-        device_id: "BROODIINNOX-001",
-        device_name: "Broodinnox",
-        status: "online",
-        users: 245,
-        revenue: '$15,432',
-        growth: '+12.5%',
-        activeProjects: 18,
-        serverStatus: 'online',
-        uptime: '99.9%',
-        lastUpdated: new Date().toISOString(),
-        features: [
-            "SMS Payment Control",
-            "MQTT over GPRS",
-            "RTC Power Loss Recovery",
-            "Evening Safety Override",
-            "Daytime Temperature Control",
-            "Factory Reset"
-        ]
-    });
-});
-
-app.get('/api/files', (req, res) => {
-    const files = [
-        { name: 'server.js', type: 'js', size: '1.2KB', path: '/server.js' },
-        { name: 'package.json', type: 'json', size: '0.8KB', path: '/package.json' },
-        { name: 'render.yaml', type: 'yaml', size: '0.5KB', path: '/render.yaml' },
-        { name: '.node-version', type: 'config', size: '0.1KB', path: '/.node-version' },
-        { name: 'index.html', type: 'html', size: '1.5KB', path: '/public/index.html' },
-        { name: 'style.css', type: 'css', size: '2.1KB', path: '/public/style.css' },
-        { name: 'script.js', type: 'js', size: '3.2KB', path: '/public/script.js' },
-        { name: 'dashboard.js', type: 'js', size: '4.8KB', path: '/public/dashboard.js' }
-    ];
-    res.json(files);
-});
-
-app.get('/api/stats', (req, res) => {
-    const stats = {
-        totalFiles: 8,
-        folders: 1,
-        javascriptFiles: 3,
-        configFiles: 3,
-        htmlFiles: 1,
-        cssFiles: 1,
-        lastUpdated: new Date().toLocaleDateString(),
-        projectSize: '15.2KB',
-        linesOfCode: 1250
-    };
-    res.json(stats);
-});
-
-app.post('/api/deploy', (req, res) => {
-    const { action } = req.body;
-    
-    if (action === 'restart') {
-        res.json({ 
-            success: true, 
-            message: 'Server restart initiated',
-            timestamp: new Date().toISOString(),
-            status: 'restarting'
-        });
-    } else if (action === 'deploy') {
-        res.json({ 
-            success: true, 
-            message: 'Deployment started',
-            timestamp: new Date().toISOString(),
-            status: 'deploying'
-        });
-    } else {
-        res.json({ 
-            success: true, 
-            message: 'Action completed',
-            timestamp: new Date().toISOString(),
-            status: 'completed'
-        });
-    }
-});
-
-app.get('/api/file-content/:filename', (req, res) => {
-    const { filename } = req.params;
-    const fileContents = {
-        'server.js': `const express = require('express');
-const path = require('path');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(express.json());
-app.use(express.static('public'));
-
-// Routes
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/api/dashboard', (req, res) => {
-    res.json({
-        users: 245,
-        revenue: '$15,432',
-        growth: '+12.5%',
-        activeProjects: 18,
-        serverStatus: 'online',
-        uptime: '99.9%'
-    });
-});
-
-app.listen(PORT, () => {
-    console.log(\`Server running on port \${PORT}\`);
-});`,
-
-        'package.json': `{
-  "name": "my-web-app",
-  "version": "1.0.0",
-  "description": "A complete web application with dashboard interface",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "test": "echo \\"No tests specified\\" && exit 0"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
   }
-}`,
+});
 
-        'render.yaml': `services:
-  - type: web
-    name: my-web-app
-    env: node
-    buildCommand: npm install
-    startCommand: node server.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-    autoDeploy: true`,
+const PORT = process.env.PORT || 3000;
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://test.mosquitto.org';
+const DEVICE_ID = process.env.DEVICE_ID || 'BROODIINNOX-001';
 
-        '.node-version': '18.17.1',
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-        'index.html': `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Main content loaded by JavaScript -->
-    </div>
-    <script src="script.js"></script>
-    <script src="dashboard.js"></script>
-</body>
-</html>`,
+// In-memory storage for device data
+let deviceData = {
+  device_id: DEVICE_ID,
+  device_name: 'Broodinnox',
+  temperature: 0,
+  cycle_day: 0,
+  total_days: 30,
+  max_temp: 36,
+  min_temp: 32,
+  relay_status: 'OFF',
+  relay_mode: 'AUTO',
+  error: 'OK',
+  weekly_reduce_enabled: true,
+  mode: 'OFFLINE',
+  animal_type: 'Chicken',
+  sensors: {
+    temp1: 'N/A',
+    temp2: 'N/A',
+    temp3: 'N/A',
+    temp4: 'N/A',
+    s1_active: true,
+    s2_active: true,
+    s3_active: true,
+    s4_active: true
+  },
+  timestamp: Date.now(),
+  lastSeen: null,
+  status: 'offline'
+};
 
-        'style.css': `/* Main stylesheet */
-:root {
-    --primary-color: #4f46e5;
-    --secondary-color: #7c3aed;
-    --text-color: #1e293b;
-    --bg-color: #f8fafc;
-}
+let historicalData = [];
+const MAX_HISTORY = 1000; // Store last 1000 readings
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+// MQTT Client Setup
+const mqttClient = mqtt.connect(MQTT_BROKER, {
+  clientId: `broodinnox-dashboard-${Math.random().toString(16).slice(3)}`,
+  clean: true,
+  connectTimeout: 4000,
+  reconnectPeriod: 1000,
+});
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-color);
-    color: var(--text-color);
-    line-height: 1.6;
-}`,
+// MQTT Topics
+const topics = {
+  data: `broodinnox/${DEVICE_ID}/data`,
+  status: `broodinnox/${DEVICE_ID}/status`,
+  discovery: `broodinnox/${DEVICE_ID}/discovery`,
+  control_relay: `broodinnox/${DEVICE_ID}/control/relay`,
+  control_max_temp: `broodinnox/${DEVICE_ID}/control/max_temp`,
+  control_min_temp: `broodinnox/${DEVICE_ID}/control/min_temp`,
+  control_total_days: `broodinnox/${DEVICE_ID}/control/total_days`,
+  control_sensor: `broodinnox/${DEVICE_ID}/control/sensor`,
+  control_weekly_reduce: `broodinnox/${DEVICE_ID}/control/weekly_reduce`,
+  control_reduce_now: `broodinnox/${DEVICE_ID}/control/reduce_now`,
+  control_mode: `broodinnox/${DEVICE_ID}/control/mode`
+};
 
-        'script.js': `// Main application script
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('App loaded successfully!');
+// MQTT Event Handlers
+mqttClient.on('connect', () => {
+  console.log('✅ Connected to MQTT broker:', MQTT_BROKER);
+  console.log('🆔 Device ID:', DEVICE_ID);
+  
+  // Subscribe to all topics
+  Object.values(topics).forEach(topic => {
+    mqttClient.subscribe(topic, (err) => {
+      if (err) {
+        console.error(`❌ Failed to subscribe to ${topic}:`, err);
+      } else {
+        console.log(`📡 Subscribed to: ${topic}`);
+      }
+    });
+  });
+  
+  // Request device discovery
+  mqttClient.publish(topics.discovery, JSON.stringify({ request: 'info' }));
+});
+
+mqttClient.on('message', (topic, message) => {
+  try {
+    const data = JSON.parse(message.toString());
+    console.log(`📨 MQTT Message [${topic}]:`, data);
     
-    // Initialize app
-    initApp();
-});
-
-function initApp() {
-    console.log('Initializing app...');
-    // App initialization logic
-}`,
-
-        'dashboard.js': `// Dashboard-specific functionality
-console.log('Dashboard module loaded');
-
-class Dashboard {
-    constructor() {
-        this.initialized = false;
+    if (topic === topics.data) {
+      // Update device data
+      deviceData = {
+        ...deviceData,
+        ...data,
+        lastSeen: new Date().toISOString(),
+        status: 'online'
+      };
+      
+      // Store in history
+      historicalData.push({
+        timestamp: data.timestamp || Date.now(),
+        temperature: data.temperature,
+        cycle_day: data.cycle_day,
+        relay_status: data.relay_status
+      });
+      
+      // Trim history if too large
+      if (historicalData.length > MAX_HISTORY) {
+        historicalData = historicalData.slice(-MAX_HISTORY);
+      }
+      
+      // Broadcast to all connected clients
+      io.emit('deviceUpdate', deviceData);
+      
+    } else if (topic === topics.status) {
+      deviceData.status = data.status || 'offline';
+      deviceData.mode = data.mode || deviceData.mode;
+      deviceData.lastSeen = new Date().toISOString();
+      io.emit('deviceUpdate', deviceData);
+      
+    } else if (topic === topics.discovery) {
+      console.log('🔍 Device Discovery:', data);
+      deviceData = { ...deviceData, ...data };
+      io.emit('deviceUpdate', deviceData);
     }
-
-    init() {
-        console.log('Dashboard initialized');
-        this.initialized = true;
-    }
-}
-
-// Initialize dashboard
-window.dashboard = new Dashboard();
-window.dashboard.init();`
-    };
-
-    if (fileContents[filename]) {
-        res.json({
-            success: true,
-            filename: filename,
-            content: fileContents[filename],
-            language: filename.split('.').pop()
-        });
-    } else {
-        res.status(404).json({
-            success: false,
-            message: 'File not found'
-        });
-    }
+    
+  } catch (error) {
+    console.error('❌ Error parsing MQTT message:', error);
+  }
 });
 
-// Serve main page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+mqttClient.on('error', (error) => {
+  console.error('❌ MQTT Error:', error);
 });
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Not Found',
-        message: `Cannot ${req.method} ${req.url}`
-    });
+mqttClient.on('offline', () => {
+  console.log('⚠️ MQTT Client offline');
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        error: 'Server Error',
-        message: 'Something went wrong!'
-    });
+mqttClient.on('reconnect', () => {
+  console.log('🔄 Reconnecting to MQTT broker...');
+});
+
+// Socket.IO for real-time updates
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+  
+  // Send current device data immediately
+  socket.emit('deviceUpdate', deviceData);
+  socket.emit('historicalData', historicalData);
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
+// REST API Endpoints
+
+// Get current device data
+app.get('/api/device', (req, res) => {
+  res.json(deviceData);
+});
+
+// Get historical data
+app.get('/api/history', (req, res) => {
+  const limit = parseInt(req.query.limit) || 100;
+  res.json(historicalData.slice(-limit));
+});
+
+// Control endpoints
+app.post('/api/control/relay', (req, res) => {
+  const { command } = req.body; // ON, OFF, or AUTO
+  if (!['ON', 'OFF', 'AUTO'].includes(command)) {
+    return res.status(400).json({ error: 'Invalid command. Use ON, OFF, or AUTO' });
+  }
+  
+  mqttClient.publish(topics.control_relay, command);
+  res.json({ success: true, command, topic: topics.control_relay });
+});
+
+app.post('/api/control/temperature', (req, res) => {
+  const { max_temp, min_temp } = req.body;
+  
+  if (max_temp !== undefined) {
+    mqttClient.publish(topics.control_max_temp, max_temp.toString());
+  }
+  
+  if (min_temp !== undefined) {
+    mqttClient.publish(topics.control_min_temp, min_temp.toString());
+  }
+  
+  res.json({ success: true, max_temp, min_temp });
+});
+
+app.post('/api/control/total-days', (req, res) => {
+  const { total_days } = req.body;
+  
+  if (!total_days || total_days < 1 || total_days > 365) {
+    return res.status(400).json({ error: 'Invalid total_days. Must be between 1 and 365' });
+  }
+  
+  mqttClient.publish(topics.control_total_days, total_days.toString());
+  res.json({ success: true, total_days });
+});
+
+app.post('/api/control/sensor', (req, res) => {
+  const { sensor, state } = req.body; // sensor: 1-4, state: ON/OFF
+  
+  if (!sensor || sensor < 1 || sensor > 4) {
+    return res.status(400).json({ error: 'Invalid sensor number. Use 1-4' });
+  }
+  
+  if (!['ON', 'OFF'].includes(state)) {
+    return res.status(400).json({ error: 'Invalid state. Use ON or OFF' });
+  }
+  
+  const message = `${sensor}:${state}`;
+  mqttClient.publish(topics.control_sensor, message);
+  res.json({ success: true, sensor, state });
+});
+
+app.post('/api/control/weekly-reduce', (req, res) => {
+  const { enabled } = req.body;
+  const command = enabled ? 'ON' : 'OFF';
+  
+  mqttClient.publish(topics.control_weekly_reduce, command);
+  res.json({ success: true, enabled });
+});
+
+app.post('/api/control/reduce-now', (req, res) => {
+  mqttClient.publish(topics.control_reduce_now, 'NOW');
+  res.json({ success: true, message: 'Temperature reduction triggered' });
+});
+
+app.post('/api/control/mode', (req, res) => {
+  const { mode } = req.body; // ONLINE or OFFLINE
+  
+  if (!['ONLINE', 'OFFLINE'].includes(mode)) {
+    return res.status(400).json({ error: 'Invalid mode. Use ONLINE or OFFLINE' });
+  }
+  
+  mqttClient.publish(topics.control_mode, mode);
+  res.json({ success: true, mode });
+});
+
+// Clear historical data
+app.delete('/api/history', (req, res) => {
+  historicalData = [];
+  res.json({ success: true, message: 'Historical data cleared' });
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    mqtt_connected: mqttClient.connected,
+    device_status: deviceData.status,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Serve frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
-    console.log(`🌐 API available at: http://localhost:${PORT}/api`);
+server.listen(PORT, () => {
+  console.log('🚀 Broodinnox Dashboard Server Started');
+  console.log(`📊 Dashboard: http://localhost:${PORT}`);
+  console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
+  console.log(`📡 MQTT Broker: ${MQTT_BROKER}`);
+  console.log(`🆔 Device ID: ${DEVICE_ID}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('⚠️ SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    mqttClient.end();
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
