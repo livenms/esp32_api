@@ -1,290 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broodinnox Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Broodinnox Control Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#111a2e;
+  --panel2:#0f172a;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --accent:#22c55e;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --cyan:#06b6d4;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:Inter, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  padding:16px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:linear-gradient(90deg,#0f172a,#111a2e);
+  border-bottom:1px solid #1f2a44;
+}
+
+.logo{
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+.status-bar{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.badge{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  background:#1f2937;
+  color:var(--muted);
+}
+
+.badge.ok{background:#052e1b;color:#22c55e;}
+.badge.warn{background:#3a2a05;color:#f59e0b;}
+.badge.bad{background:#3a0a0a;color:#ef4444;}
+
+main{
+  padding:20px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid #1f2a44;
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+}
+
+.card h3{
+  margin:0 0 8px 0;
+  font-size:14px;
+  color:var(--muted);
+  font-weight:500;
+}
+
+.value{
+  font-size:28px;
+  font-weight:700;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.indicator{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+}
+
+.green{background:var(--accent);}
+.red{background:var(--danger);}
+
+.chart{
+  height:120px;
+  background:linear-gradient(180deg,#0f172a,#0b1220);
+  border-radius:10px;
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-size:12px;
+}
+
+footer{
+  padding:16px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+}
+
+button{
+  background:#1f2937;
+  border:1px solid #2b3a55;
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+button:hover{
+  border-color:var(--cyan);
+}
+</style>
 </head>
+
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="brand">
-                    <div class="brand-icon">🐣</div>
-                    <div class="brand-text">
-                        <h1>BROODINNOX</h1>
-                        <p class="subtitle">Smart Brooding System</p>
-                    </div>
-                </div>
-                
-                <div class="header-status">
-                    <div class="status-badge" id="deviceStatus">
-                        <span class="status-dot"></span>
-                        <span class="status-text">Connecting...</span>
-                    </div>
-                    <div class="device-info">
-                        <span class="device-id" id="deviceId">-</span>
-                    </div>
-                </div>
-            </div>
-        </header>
 
-        <!-- Main Grid -->
-        <main class="dashboard-main">
-            <!-- Left Column - Stats & Temperature -->
-            <div class="column column-left">
-                <!-- Temperature Card -->
-                <div class="card card-temperature">
-                    <div class="card-header">
-                        <h2>Current Temperature</h2>
-                        <div class="temp-badge" id="tempStatus">NORMAL</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="temp-display">
-                            <div class="temp-main">
-                                <span class="temp-value" id="currentTemp">--</span>
-                                <span class="temp-unit">°C</span>
-                            </div>
-                            <div class="temp-range">
-                                <div class="range-item">
-                                    <span class="range-label">MIN</span>
-                                    <span class="range-value" id="minTemp">--</span>
-                                </div>
-                                <div class="range-divider"></div>
-                                <div class="range-item">
-                                    <span class="range-label">MAX</span>
-                                    <span class="range-value" id="maxTemp">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="sensor-grid">
-                            <div class="sensor-item" id="sensor1">
-                                <span class="sensor-label">DHT1</span>
-                                <span class="sensor-value">--°C</span>
-                            </div>
-                            <div class="sensor-item" id="sensor2">
-                                <span class="sensor-label">DHT2</span>
-                                <span class="sensor-value">--°C</span>
-                            </div>
-                            <div class="sensor-item" id="sensor3">
-                                <span class="sensor-label">DHT3</span>
-                                <span class="sensor-value">--°C</span>
-                            </div>
-                            <div class="sensor-item" id="sensor4">
-                                <span class="sensor-label">DHT4</span>
-                                <span class="sensor-value">--°C</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<header>
+  <div class="logo">BROODINNOX CONTROL SYSTEM</div>
+  <div class="status-bar">
+    <div class="badge ok" id="mqttStatus">MQTT: ONLINE</div>
+    <div class="badge warn" id="gsmStatus">GSM: CONNECTING</div>
+    <div class="badge" id="modeStatus">AUTO MODE</div>
+  </div>
+</header>
 
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📅</div>
-                        <div class="stat-content">
-                            <span class="stat-label">Cycle Day</span>
-                            <span class="stat-value">
-                                <span id="currentDay">0</span>/<span id="totalDays">0</span>
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">🔥</div>
-                        <div class="stat-content">
-                            <span class="stat-label">Heater Status</span>
-                            <span class="stat-value" id="relayStatus">OFF</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">⚙️</div>
-                        <div class="stat-content">
-                            <span class="stat-label">Relay Mode</span>
-                            <span class="stat-value" id="relayMode">AUTO</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">🐔</div>
-                        <div class="stat-content">
-                            <span class="stat-label">Animal Type</span>
-                            <span class="stat-value" id="animalType">-</span>
-                        </div>
-                    </div>
-                </div>
+<main>
 
-                <!-- Chart Card -->
-                <div class="card card-chart">
-                    <div class="card-header">
-                        <h2>Temperature History</h2>
-                        <div class="chart-controls">
-                            <button class="chart-btn active" data-range="1h">1H</button>
-                            <button class="chart-btn" data-range="6h">6H</button>
-                            <button class="chart-btn" data-range="24h">24H</button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="tempChart"></canvas>
-                    </div>
-                </div>
-            </div>
+  <div class="card">
+    <h3>Temperature</h3>
+    <div class="value" id="temp">36.2°C</div>
+    <div class="row"><span>Sensor Avg</span><span id="avg">OK</span></div>
+    <div class="chart">Live trend</div>
+  </div>
 
-            <!-- Right Column - Controls -->
-            <div class="column column-right">
-                <!-- Heater Control Card -->
-                <div class="card card-control">
-                    <div class="card-header">
-                        <h2>Heater Control</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="control-buttons">
-                            <button class="control-btn btn-on" onclick="controlRelay('ON')">
-                                <span class="btn-icon">🔥</span>
-                                <span class="btn-label">Turn ON</span>
-                            </button>
-                            <button class="control-btn btn-off" onclick="controlRelay('OFF')">
-                                <span class="btn-icon">❄️</span>
-                                <span class="btn-label">Turn OFF</span>
-                            </button>
-                            <button class="control-btn btn-auto" onclick="controlRelay('AUTO')">
-                                <span class="btn-icon">⚙️</span>
-                                <span class="btn-label">Auto Mode</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+  <div class="card">
+    <h3>Relay Status</h3>
+    <div class="value"><span class="indicator green"></span> ACTIVE</div>
+    <div class="row"><span>Mode</span><span>AUTO</span></div>
+    <button onclick="toggleRelay()">Toggle Relay</button>
+  </div>
 
-                <!-- Temperature Settings Card -->
-                <div class="card card-settings">
-                    <div class="card-header">
-                        <h2>Temperature Settings</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="setting-group">
-                            <label class="setting-label">
-                                <span>Maximum Temperature</span>
-                                <span class="setting-value" id="maxTempDisplay">36°C</span>
-                            </label>
-                            <input type="range" class="setting-slider" id="maxTempSlider" 
-                                   min="25" max="45" value="36" step="1">
-                        </div>
-                        
-                        <div class="setting-group">
-                            <label class="setting-label">
-                                <span>Minimum Temperature</span>
-                                <span class="setting-value" id="minTempDisplay">32°C</span>
-                            </label>
-                            <input type="range" class="setting-slider" id="minTempSlider" 
-                                   min="20" max="40" value="32" step="1">
-                        </div>
-                        
-                        <div class="setting-group">
-                            <label class="setting-label">
-                                <span>Total Cycle Days</span>
-                                <span class="setting-value" id="totalDaysDisplay">30 days</span>
-                            </label>
-                            <input type="range" class="setting-slider" id="totalDaysSlider" 
-                                   min="1" max="90" value="30" step="1">
-                        </div>
-                        
-                        <button class="apply-btn" onclick="applySettings()">
-                            Apply Settings
-                        </button>
-                    </div>
-                </div>
+  <div class="card">
+    <h3>Brooding Cycle</h3>
+    <div class="value"><span id="day">12</span>/30</div>
+    <div class="row"><span>Status</span><span>RUNNING</span></div>
+  </div>
 
-                <!-- Advanced Settings Card -->
-                <div class="card card-advanced">
-                    <div class="card-header">
-                        <h2>Advanced Settings</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="toggle-group">
-                            <label class="toggle-label">
-                                <span>Weekly Temperature Reduction</span>
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="weeklyReduce" checked>
-                                    <span class="toggle-slider"></span>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <button class="action-btn" onclick="reduceNow()">
-                            <span class="btn-icon">📉</span>
-                            <span class="btn-label">Reduce Temperature Now</span>
-                        </button>
-                        
-                        <div class="sensor-toggles">
-                            <h3>Sensor Management</h3>
-                            <div class="sensor-toggle-grid">
-                                <label class="sensor-toggle">
-                                    <input type="checkbox" id="s1Toggle" checked onchange="toggleSensor(1, this.checked)">
-                                    <span>DHT1</span>
-                                </label>
-                                <label class="sensor-toggle">
-                                    <input type="checkbox" id="s2Toggle" checked onchange="toggleSensor(2, this.checked)">
-                                    <span>DHT2</span>
-                                </label>
-                                <label class="sensor-toggle">
-                                    <input type="checkbox" id="s3Toggle" checked onchange="toggleSensor(3, this.checked)">
-                                    <span>DHT3</span>
-                                </label>
-                                <label class="sensor-toggle">
-                                    <input type="checkbox" id="s4Toggle" checked onchange="toggleSensor(4, this.checked)">
-                                    <span>DHT4</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  <div class="card">
+    <h3>System Health</h3>
+    <div class="row"><span>GSM</span><span id="gsm">OK</span></div>
+    <div class="row"><span>MQTT</span><span id="mqtt">OK</span></div>
+    <div class="row"><span>Sensors</span><span>4/4</span></div>
+  </div>
 
-                <!-- System Info Card -->
-                <div class="card card-info">
-                    <div class="card-header">
-                        <h2>System Information</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">Mode</span>
-                                <span class="info-value" id="systemMode">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Error Status</span>
-                                <span class="info-value" id="errorStatus">OK</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Last Update</span>
-                                <span class="info-value" id="lastUpdate">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Device Name</span>
-                                <span class="info-value" id="deviceName">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+</main>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <span class="toast-icon">✓</span>
-        <span class="toast-message"></span>
-    </div>
+<footer>
+  Broodinnox Smart Brooding System • Industrial IoT Interface
+</footer>
 
-    <!-- Scripts -->
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="app.js"></script>
+<script>
+function toggleRelay(){
+  alert("Relay command sent (hook MQTT here)");
+}
+
+// Simulated live updates
+setInterval(()=>{
+  document.getElementById("temp").innerText = (35 + Math.random()*2).toFixed(1)+"°C";
+},2000);
+</script>
+
 </body>
 </html>
