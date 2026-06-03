@@ -1,22 +1,15 @@
 services:
   - type: web
-    name: my-web-app
+    name: broodinnox-dashboard
     env: node
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: npm start
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: MQTT_BROKER
+        value: test.mosquitto.org
+      - key: MQTT_PORT
+        value: 1883
+      - key: DEVICE_ID
+        value: BROODIINNOX-001
       - key: PORT
         value: 3000
-    healthCheckPath: /
-    autoDeploy: true
-    regions:
-      - oregon
-    plan: free
-
-# Database configuration (optional)
-# databases:
-#   - name: mywebappdb
-#     databaseName: mywebapp
-#     plan: free
