@@ -1,534 +1,508 @@
-// Socket.IO connection
+/* ═══════════════════════════════════════════════
+   BROODINNOX DASHBOARD — app.js
+   Socket.IO + Chart.js · Professional UI
+   ═══════════════════════════════════════════════ */
+
+// ── Socket.IO ──
 const socket = io();
 
-// Chart instance
-let tempChart = null;
-let chartData = [];
+// ── State ──
+let chartData    = [];
+let sensorStates = { s1: true, s2: true, s3: true, s4: true };
+let weeklyEnabled = true;
+let tempChart    = null;
+let sensorChart  = null;
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-  initializeChart();
-  setupEventListeners();
-  loadDeviceData();
-});
-
-// Socket.IO event handlers
-socket.on('connect', () => {
-  console.log('✅ Connected to server');
-  updateConnectionStatus(true);
-});
-
-socket.on('disconnect', () => {
-  console.log('❌ Disconnected from server');
-  updateConnectionStatus(false);
-});
-
-socket.on('deviceUpdate', (data) => {
-  console.log('📨 Device update received:', data);
-  updateDashboard(data);
-});
-
-socket.on('historicalData', (data) => {
-  console.log('📊 Historical data received:', data.length, 'points');
-  chartData = data;
-  updateChart();
-});
-
-// Update connection status
-function updateConnectionStatus(connected) {
-  const statusBadge = document.getElementById('deviceStatus');
-  const statusText = statusBadge.querySelector('.status-text');
-  
-  if (connected) {
-    statusBadge.classList.add('online');
-    statusBadge.classList.remove('offline');
-    statusText.textContent = 'Connected';
-  } else {
-    statusBadge.classList.remove('online');
-    statusBadge.classList.add('offline');
-    statusText.textContent = 'Disconnected';
-  }
+// ─────────────────────────────────────────────
+//  CLOCK
+// ─────────────────────────────────────────────
+function startClock() {
+  const el = document.getElementById('topbarTime');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+  }, 1000);
 }
 
-// Load initial device data
-async function loadDeviceData() {
-  try {
-    const response = await fetch('/api/device');
-    const data = await response.json();
-    updateDashboard(data);
-    
-    // Load historical data
-    const historyResponse = await fetch('/api/history?limit=100');
-    const historyData = await historyResponse.json();
-    chartData = historyData;
-    updateChart();
-  } catch (error) {
-    console.error('❌ Error loading device data:', error);
-    showToast('Failed to load device data', 'error');
-  }
-}
-
-// Update dashboard with device data
-function updateDashboard(data) {
-  // Device info
-  document.getElementById('deviceId').textContent = data.device_id || '-';
-  document.getElementById('deviceName').textContent = data.device_name || '-';
-  
-  // Temperature
-  const currentTemp = parseFloat(data.temperature);
-  document.getElementById('currentTemp').textContent = 
-    isNaN(currentTemp) ? '--' : currentTemp.toFixed(1);
-  
-  const maxTemp = parseInt(data.max_temp);
-  const minTemp = parseInt(data.min_temp);
-  
-  document.getElementById('maxTemp').textContent = maxTemp || '--';
-  document.getElementById('minTemp').textContent = minTemp || '--';
-  
-  // Update temperature status badge
-  updateTempStatus(currentTemp, minTemp, maxTemp);
-  
-  // Individual sensors
-  if (data.sensors) {
-    updateSensor('sensor1', data.sensors.temp1, data.sensors.s1_active);
-    updateSensor('sensor2', data.sensors.temp2, data.sensors.s2_active);
-    updateSensor('sensor3', data.sensors.temp3, data.sensors.s3_active);
-    updateSensor('sensor4', data.sensors.temp4, data.sensors.s4_active);
-    
-    // Update sensor toggles
-    document.getElementById('s1Toggle').checked = data.sensors.s1_active;
-    document.getElementById('s2Toggle').checked = data.sensors.s2_active;
-    document.getElementById('s3Toggle').checked = data.sensors.s3_active;
-    document.getElementById('s4Toggle').checked = data.sensors.s4_active;
-  }
-  
-  // Stats
-  document.getElementById('currentDay').textContent = data.cycle_day || 0;
-  document.getElementById('totalDays').textContent = data.total_days || 0;
-  document.getElementById('relayStatus').textContent = data.relay_status || 'OFF';
-  document.getElementById('relayMode').textContent = data.relay_mode || 'AUTO';
-  document.getElementById('animalType').textContent = data.animal_type || '-';
-  
-  // System info
-  document.getElementById('systemMode').textContent = data.mode || '-';
-  document.getElementById('errorStatus').textContent = data.error || 'OK';
-  
-  // Update error status color
-  const errorElement = document.getElementById('errorStatus');
-  if (data.error === 'OK') {
-    errorElement.style.color = 'var(--success)';
-  } else {
-    errorElement.style.color = 'var(--error)';
-  }
-  
-  // Last update
-  if (data.lastSeen) {
-    const lastUpdate = new Date(data.lastSeen);
-    document.getElementById('lastUpdate').textContent = 
-      lastUpdate.toLocaleTimeString();
-  }
-  
-  // Update device status based on data
-  if (data.status === 'online') {
-    updateConnectionStatus(true);
-  }
-  
-  // Update sliders
-  if (maxTemp) {
-    document.getElementById('maxTempSlider').value = maxTemp;
-    document.getElementById('maxTempDisplay').textContent = maxTemp + '°C';
-  }
-  if (minTemp) {
-    document.getElementById('minTempSlider').value = minTemp;
-    document.getElementById('minTempDisplay').textContent = minTemp + '°C';
-  }
-  if (data.total_days) {
-    document.getElementById('totalDaysSlider').value = data.total_days;
-    document.getElementById('totalDaysDisplay').textContent = data.total_days + ' days';
-  }
-  
-  // Weekly reduce toggle
-  document.getElementById('weeklyReduce').checked = data.weekly_reduce_enabled !== false;
-  
-  // Add to chart data if temperature is valid
-  if (!isNaN(currentTemp) && data.timestamp) {
-    chartData.push({
-      timestamp: data.timestamp,
-      temperature: currentTemp,
-      cycle_day: data.cycle_day,
-      relay_status: data.relay_status
+// ─────────────────────────────────────────────
+//  NAVIGATION
+// ─────────────────────────────────────────────
+function initNav() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      const panel = item.dataset.panel;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('panel-' + panel).classList.add('active');
+      document.getElementById('bcCurrent').textContent =
+        item.querySelector('span:last-child').textContent;
     });
-    
-    // Keep only last 1000 points
-    if (chartData.length > 1000) {
-      chartData = chartData.slice(-1000);
-    }
-    
-    updateChart();
-  }
+  });
 }
 
-// Update temperature status badge
-function updateTempStatus(current, min, max) {
-  const badge = document.getElementById('tempStatus');
-  
-  if (isNaN(current) || isNaN(min) || isNaN(max)) {
-    badge.textContent = 'N/A';
-    badge.className = 'temp-badge';
-    return;
-  }
-  
-  if (current < min - 2) {
-    badge.textContent = 'TOO COLD';
-    badge.className = 'temp-badge danger';
-  } else if (current < min) {
-    badge.textContent = 'BELOW MIN';
-    badge.className = 'temp-badge warning';
-  } else if (current > max + 2) {
-    badge.textContent = 'TOO HOT';
-    badge.className = 'temp-badge danger';
-  } else if (current > max) {
-    badge.textContent = 'ABOVE MAX';
-    badge.className = 'temp-badge warning';
-  } else {
-    badge.textContent = 'NORMAL';
-    badge.className = 'temp-badge';
-  }
-}
-
-// Update individual sensor display
-function updateSensor(sensorId, value, isActive) {
-  const sensor = document.getElementById(sensorId);
-  const valueElement = sensor.querySelector('.sensor-value');
-  
-  if (!isActive) {
-    sensor.classList.add('inactive');
-    sensor.classList.remove('error');
-    valueElement.textContent = 'DISABLED';
-  } else if (value === 'NaN' || value === 'N/A' || isNaN(parseFloat(value))) {
-    sensor.classList.add('error');
-    sensor.classList.remove('inactive');
-    valueElement.textContent = 'ERROR';
-  } else {
-    sensor.classList.remove('inactive', 'error');
-    valueElement.textContent = parseFloat(value).toFixed(1) + '°C';
-  }
-}
-
-// Initialize Chart.js
-function initializeChart() {
+// ─────────────────────────────────────────────
+//  CHARTS
+// ─────────────────────────────────────────────
+function initCharts() {
+  // Main temperature chart
   const ctx = document.getElementById('tempChart').getContext('2d');
-  
   tempChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: [],
-      datasets: [{
-        label: 'Temperature (°C)',
-        data: [],
-        borderColor: '#FF6B35',
-        backgroundColor: 'rgba(255, 107, 53, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHoverBackgroundColor: '#FF6B35',
-        pointHoverBorderColor: '#fff',
-        pointHoverBorderWidth: 2
-      }]
+      datasets: [
+        {
+          label: 'Avg Temp', data: [],
+          borderColor: '#25e87a', backgroundColor: 'rgba(37,232,122,.07)',
+          borderWidth: 2, fill: true, tension: .4,
+          pointRadius: 0, pointHoverRadius: 4
+        }
+      ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        intersect: false,
-        mode: 'index'
-      },
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
-          backgroundColor: '#1A2028',
-          titleColor: '#A0AEC0',
-          bodyColor: '#FFFFFF',
-          borderColor: '#2D3748',
-          borderWidth: 1,
-          padding: 12,
-          displayColors: false,
+          backgroundColor: '#111a17',
+          titleColor: '#4d6b5e',
+          bodyColor: '#e2f0e8',
+          borderColor: '#1e2d27', borderWidth: 1,
+          padding: 10, displayColors: false,
           callbacks: {
-            title: (context) => {
-              const date = new Date(context[0].label);
-              return date.toLocaleString();
-            },
-            label: (context) => {
-              return `Temperature: ${context.parsed.y.toFixed(1)}°C`;
-            }
+            title: ctx => new Date(ctx[0].label).toLocaleTimeString(),
+            label: ctx => `Temp: ${ctx.parsed.y.toFixed(1)}°C`
           }
         }
       },
       scales: {
         x: {
           type: 'time',
-          time: {
-            unit: 'minute',
-            displayFormats: {
-              minute: 'HH:mm',
-              hour: 'HH:mm'
-            }
-          },
-          grid: {
-            color: '#2D3748',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#718096',
-            font: {
-              family: 'JetBrains Mono',
-              size: 10
-            }
-          }
+          time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
+          grid: { color: 'rgba(255,255,255,.03)', drawBorder: false },
+          ticks: { color: '#4d6b5e', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6 }
         },
         y: {
           beginAtZero: false,
-          grid: {
-            color: '#2D3748',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#718096',
-            font: {
-              family: 'JetBrains Mono',
-              size: 10
-            },
-            callback: (value) => value + '°C'
-          }
+          grid: { color: 'rgba(255,255,255,.03)', drawBorder: false },
+          ticks: { color: '#4d6b5e', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '°C' }
+        }
+      }
+    }
+  });
+
+  // Sensor comparison chart
+  const sctx = document.getElementById('sensorChart').getContext('2d');
+  sensorChart = new Chart(sctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'DS1', data: [], borderColor: '#25e87a', backgroundColor: 'rgba(37,232,122,.06)', borderWidth: 1.5, fill: false, tension: .4, pointRadius: 0 },
+        { label: 'DS2', data: [], borderColor: '#38d4ff', backgroundColor: 'rgba(56,212,255,.06)', borderWidth: 1.5, fill: false, tension: .4, pointRadius: 0 },
+        { label: 'DS3', data: [], borderColor: '#ff7d3b', backgroundColor: 'rgba(255,125,59,.06)', borderWidth: 1.5, fill: false, tension: .4, pointRadius: 0 },
+        { label: 'DS4', data: [], borderColor: '#c47bff', backgroundColor: 'rgba(196,123,255,.06)', borderWidth: 1.5, fill: false, tension: .4, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#4d6b5e', boxWidth: 12, font: { family: 'JetBrains Mono', size: 10 } }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } },
+          grid: { color: 'rgba(255,255,255,.03)', drawBorder: false },
+          ticks: { color: '#4d6b5e', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 6 }
+        },
+        y: {
+          beginAtZero: false,
+          grid: { color: 'rgba(255,255,255,.03)', drawBorder: false },
+          ticks: { color: '#4d6b5e', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v + '°C' }
         }
       }
     }
   });
 }
 
-// Update chart with latest data
+function pushChartPoint(data) {
+  const ts = Date.now();
+  const MAX = 600;
+
+  chartData.push({
+    timestamp: ts,
+    temperature: parseFloat(data.temperature),
+    cycle_day: data.cycle_day,
+    relay_status: data.relay_status,
+    s1: safeTemp(data.sensors?.temp1),
+    s2: safeTemp(data.sensors?.temp2),
+    s3: safeTemp(data.sensors?.temp3),
+    s4: safeTemp(data.sensors?.temp4),
+  });
+  if (chartData.length > MAX) chartData = chartData.slice(-MAX);
+
+  updateChart();
+}
+
+function safeTemp(v) {
+  const f = parseFloat(v);
+  return (isNaN(f) || v === 'NaN') ? null : f;
+}
+
 function updateChart() {
   if (!tempChart || chartData.length === 0) return;
-  
-  const labels = chartData.map(d => d.timestamp * 1000); // Convert to ms
-  const temperatures = chartData.map(d => d.temperature);
-  
+  const labels = chartData.map(d => d.timestamp);
   tempChart.data.labels = labels;
-  tempChart.data.datasets[0].data = temperatures;
-  tempChart.update('none'); // Update without animation for performance
+  tempChart.data.datasets[0].data = chartData.map(d => d.temperature);
+  tempChart.update('none');
+
+  sensorChart.data.labels = labels;
+  sensorChart.data.datasets[0].data = chartData.map(d => d.s1);
+  sensorChart.data.datasets[1].data = chartData.map(d => d.s2);
+  sensorChart.data.datasets[2].data = chartData.map(d => d.s3);
+  sensorChart.data.datasets[3].data = chartData.map(d => d.s4);
+  sensorChart.update('none');
 }
 
-// Setup event listeners
-function setupEventListeners() {
-  // Slider inputs
-  document.getElementById('maxTempSlider').addEventListener('input', (e) => {
-    document.getElementById('maxTempDisplay').textContent = e.target.value + '°C';
-  });
-  
-  document.getElementById('minTempSlider').addEventListener('input', (e) => {
-    document.getElementById('minTempDisplay').textContent = e.target.value + '°C';
-  });
-  
-  document.getElementById('totalDaysSlider').addEventListener('input', (e) => {
-    document.getElementById('totalDaysDisplay').textContent = e.target.value + ' days';
-  });
-  
-  // Chart range buttons
-  document.querySelectorAll('.chart-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      
-      const range = e.target.dataset.range;
-      updateChartRange(range);
-    });
-  });
-  
-  // Weekly reduce toggle
-  document.getElementById('weeklyReduce').addEventListener('change', async (e) => {
-    try {
-      const response = await fetch('/api/control/weekly-reduce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: e.target.checked })
-      });
-      
-      if (response.ok) {
-        showToast(`Weekly reduction ${e.target.checked ? 'enabled' : 'disabled'}`);
-      } else {
-        throw new Error('Failed to update setting');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showToast('Failed to update weekly reduction', 'error');
-      e.target.checked = !e.target.checked;
+// Chart range buttons
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const map = { '1h': 'minute', '6h': 'minute', '24h': 'hour' };
+    if (tempChart) {
+      tempChart.options.scales.x.time.unit = map[btn.dataset.range] || 'minute';
+      tempChart.update();
     }
   });
-}
+});
 
-// Update chart time range
-function updateChartRange(range) {
-  if (!tempChart) return;
-  
-  let unit, stepSize;
-  
-  switch (range) {
-    case '1h':
-      unit = 'minute';
-      stepSize = 5;
-      break;
-    case '6h':
-      unit = 'minute';
-      stepSize = 30;
-      break;
-    case '24h':
-      unit = 'hour';
-      stepSize = 2;
-      break;
-    default:
-      unit = 'minute';
-      stepSize = 5;
-  }
-  
-  tempChart.options.scales.x.time.unit = unit;
-  tempChart.options.scales.x.time.stepSize = stepSize;
-  tempChart.update();
-}
+// ─────────────────────────────────────────────
+//  SOCKET.IO
+// ─────────────────────────────────────────────
+socket.on('connect', () => {
+  setPill('serverStatus', 'online', 'Connected');
+  loadInitialData();
+});
 
-// Control Functions
+socket.on('disconnect', () => {
+  setPill('serverStatus', 'error', 'Disconnected');
+  setPill('deviceStatusPill', 'error', 'Offline');
+});
 
-// Relay control
-async function controlRelay(command) {
+socket.on('deviceUpdate', data => {
+  updateDashboard(data);
+  pushChartPoint(data);
+});
+
+socket.on('historicalData', data => {
+  if (!Array.isArray(data)) return;
+  chartData = data.map(d => ({
+    timestamp: d.timestamp * 1000,
+    temperature: parseFloat(d.temperature),
+    cycle_day: d.cycle_day,
+    relay_status: d.relay_status,
+    s1: null, s2: null, s3: null, s4: null
+  }));
+  updateChart();
+});
+
+async function loadInitialData() {
   try {
-    const response = await fetch('/api/control/relay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command })
-    });
-    
-    if (response.ok) {
-      showToast(`Heater ${command.toLowerCase()}`);
-    } else {
-      throw new Error('Failed to control relay');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Failed to control heater', 'error');
+    const r  = await fetch('/api/device');
+    const d  = await r.json();
+    updateDashboard(d);
+
+    const hr = await fetch('/api/history?limit=200');
+    const h  = await hr.json();
+    chartData = h.map(d => ({
+      timestamp: d.timestamp * 1000,
+      temperature: parseFloat(d.temperature),
+      cycle_day: d.cycle_day,
+      relay_status: d.relay_status,
+      s1: null, s2: null, s3: null, s4: null
+    }));
+    updateChart();
+  } catch(e) {
+    console.error('Load error:', e);
+    showToast('Could not load initial data', 'error');
   }
 }
 
-// Apply temperature and days settings
-async function applySettings() {
-  const maxTemp = parseInt(document.getElementById('maxTempSlider').value);
-  const minTemp = parseInt(document.getElementById('minTempSlider').value);
-  const totalDays = parseInt(document.getElementById('totalDaysSlider').value);
-  
-  // Validate
-  if (minTemp >= maxTemp) {
-    showToast('Min temperature must be less than max temperature', 'error');
+// ─────────────────────────────────────────────
+//  DASHBOARD UPDATE
+// ─────────────────────────────────────────────
+function updateDashboard(data) {
+  const temp = parseFloat(data.temperature) || 0;
+  const max  = parseInt(data.max_temp) || 0;
+  const min  = parseInt(data.min_temp) || 0;
+  const day  = data.cycle_day || 0;
+  const total= data.total_days || 30;
+  const pct  = Math.min(100, Math.round((day / total) * 100));
+
+  // Connection pills
+  if (data.status === 'online') {
+    setPill('deviceStatusPill', 'online', 'Online');
+    setPill('mqttStatus', 'online', 'Connected');
+  } else {
+    setPill('deviceStatusPill', '', 'Offline');
+  }
+
+  // Device IDs
+  setText('topbarDeviceId', data.device_id || '—');
+  setText('sidebarDeviceId', data.device_id || '—');
+  setText('sidebarLastSeen', data.lastSeen ? new Date(data.lastSeen).toLocaleTimeString() : '—');
+
+  // KPI row
+  setText('kpiTemp',   temp.toFixed(1) + '°C');
+  setText('kpiDay',    `${day} / ${total}`);
+  setText('kpiRelay',  data.relay_status || '—');
+  setText('kpiMode',   data.relay_mode || '—');
+  setText('kpiAnimal', data.animal_type || '—');
+  document.getElementById('kpiRelay').style.color = data.relay_status === 'ON' ? 'var(--orange)' : 'var(--muted)';
+
+  // Period
+  let period = 'NIGHT';
+  if (data.evening_active) period = 'EVENING';
+  else if (data.is_daytime) period = 'DAYTIME';
+  setText('kpiPeriod', period);
+
+  // Temperature card
+  setText('ovTemp', temp.toFixed(1));
+  setText('ovMin',  min + '°C');
+  setText('ovMax',  max + '°C');
+
+  const err = data.error || 'OK';
+  setText('ovError', err);
+  document.getElementById('ovError').className = 'tm-val ' + (err === 'OK' ? 'accent-green' : 'accent-danger');
+
+  // Temp status badge
+  const badge  = tempStatusBadge(temp, min, max);
+  setText('tempStatusBadge', badge.text);
+  document.getElementById('tempStatusBadge').className = 'temp-status-badge ' + badge.cls;
+  setText('tempBadgeOv', badge.text);
+  document.getElementById('tempBadgeOv').className = 'card-badge ' + badge.cls;
+
+  // Failsafe banner
+  document.getElementById('failsafeBadge').classList.toggle('show', !!data.failsafe);
+
+  // Heater
+  const relayOn = data.relay_status === 'ON';
+  document.getElementById('heaterRing').className = 'heater-ring' + (relayOn ? ' on' : '');
+  setText('heaterState', relayOn ? 'ON' : 'OFF');
+  document.getElementById('heaterState').style.color = relayOn ? 'var(--orange)' : 'var(--muted)';
+  setText('heaterSub', data.relay_mode === 'MANUAL' ? 'Manual override' : 'Automatic control');
+  setText('relayModeTag', data.relay_mode || 'AUTO');
+  setText('kpiMode', data.relay_mode || 'AUTO');
+
+  // Evening cycle
+  const cycleActive = !!data.evening_active;
+  document.getElementById('cycleDot').className = 'cycle-dot' + (cycleActive ? ' active' : '');
+  setText('cycleText', cycleActive ? `Evening cycle: ${relayOn ? 'Heating' : 'Rest phase'}` : 'Evening cycle: inactive');
+
+  // Progress
+  setText('progDay',   day);
+  setText('progTotal', total);
+  setText('progPct',   pct + '%');
+  document.getElementById('progFill').style.width = pct + '%';
+
+  // System info
+  setText('infoDevId',    data.device_id   || '—');
+  setText('infoTransport',data.transport   || 'GSM');
+  setText('infoMode',     data.mode        || data.relay_mode || '—');
+  setText('infoError',    err);
+  document.getElementById('infoError').className = 'info-v ' + (err === 'OK' ? 'accent-green' : 'accent-danger');
+  setText('infoWeekly',   data.weekly_reduce_enabled ? 'Enabled' : 'Disabled');
+  setText('infoFailsafe', data.failsafe ? 'ACTIVE' : 'Normal');
+  document.getElementById('infoFailsafe').className = 'info-v ' + (data.failsafe ? 'accent-danger' : 'accent-green');
+
+  // Sliders sync
+  if (max) { document.getElementById('maxTempSlider').value = max; document.getElementById('maxTempDisplay').textContent = max + '°C'; }
+  if (min) { document.getElementById('minTempSlider').value = min; document.getElementById('minTempDisplay').textContent = min + '°C'; }
+  if (total) { document.getElementById('totalDaysSlider').value = total; document.getElementById('totalDaysDisplay').textContent = total; }
+
+  // Sensors panel
+  if (data.sensors) {
+    updateSensorBig(1, data.sensors.temp1, data.sensors.s1_active);
+    updateSensorBig(2, data.sensors.temp2, data.sensors.s2_active);
+    updateSensorBig(3, data.sensors.temp3, data.sensors.s3_active);
+    updateSensorBig(4, data.sensors.temp4, data.sensors.s4_active);
+    sensorStates = {
+      s1: data.sensors.s1_active,
+      s2: data.sensors.s2_active,
+      s3: data.sensors.s3_active,
+      s4: data.sensors.s4_active,
+    };
+    syncToggles();
+  }
+
+  // Weekly toggle
+  if (data.weekly_reduce_enabled !== undefined) {
+    weeklyEnabled = data.weekly_reduce_enabled;
+    document.getElementById('weeklyTgl').className = 'tgl' + (weeklyEnabled ? ' on' : '');
+  }
+}
+
+function updateSensorBig(n, val, active) {
+  const card   = document.getElementById('sb' + n);
+  const tempEl = document.getElementById('sb' + n + 'temp');
+  const statEl = document.getElementById('sb' + n + 'status');
+
+  if (!active) {
+    card.className = 'sensor-big disabled';
+    tempEl.textContent = '—';
+    tempEl.style.color = 'var(--muted)';
+    statEl.textContent = 'Disabled';
     return;
   }
-  
-  try {
-    // Update temperatures
-    const tempResponse = await fetch('/api/control/temperature', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ max_temp: maxTemp, min_temp: minTemp })
-    });
-    
-    // Update total days
-    const daysResponse = await fetch('/api/control/total-days', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ total_days: totalDays })
-    });
-    
-    if (tempResponse.ok && daysResponse.ok) {
-      showToast('Settings applied successfully');
-    } else {
-      throw new Error('Failed to apply settings');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Failed to apply settings', 'error');
+
+  const f = parseFloat(val);
+  const bad = isNaN(f) || val === 'NaN' || val === 'N/A';
+
+  if (bad) {
+    card.className = 'sensor-big error';
+    tempEl.textContent = 'ERR';
+    tempEl.style.color = 'var(--danger)';
+    statEl.textContent = 'No reading';
+  } else {
+    card.className = 'sensor-big active';
+    tempEl.textContent = f.toFixed(1);
+    tempEl.style.color = 'var(--accent)';
+    statEl.textContent = 'Active';
   }
 }
 
-// Reduce temperature now
+function syncToggles() {
+  for (let i = 1; i <= 4; i++) {
+    const on = sensorStates['s' + i];
+    document.getElementById('tgl' + i).className = 'tgl' + (on ? ' on' : '');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function setPill(id, cls, text) {
+  const el = document.getElementById(id);
+  el.className = 'status-pill' + (cls ? ' ' + cls : '');
+  el.querySelector('span:last-child').textContent = text;
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function tempStatusBadge(cur, min, max) {
+  if (isNaN(cur) || !min || !max) return { text: 'N/A', cls: '' };
+  if (cur < min - 2)  return { text: 'TOO COLD', cls: 'cold' };
+  if (cur < min)      return { text: 'BELOW MIN', cls: 'cold' };
+  if (cur > max + 2)  return { text: 'TOO HOT',  cls: 'danger' };
+  if (cur > max)      return { text: 'ABOVE MAX', cls: 'hot' };
+  return { text: 'NORMAL', cls: '' };
+}
+
+// ─────────────────────────────────────────────
+//  CONTROLS (call REST API → server forwards to MQTT)
+// ─────────────────────────────────────────────
+async function controlRelay(cmd) {
+  try {
+    const r = await fetch('/api/control/relay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd })
+    });
+    if (r.ok) showToast(`Heater → ${cmd}`, 'success');
+    else throw new Error();
+  } catch { showToast('Failed to control relay', 'error'); }
+}
+
+async function applySettings() {
+  const max   = parseInt(document.getElementById('maxTempSlider').value);
+  const min   = parseInt(document.getElementById('minTempSlider').value);
+  const total = parseInt(document.getElementById('totalDaysSlider').value);
+
+  if (min >= max) { showToast('Min must be less than Max', 'warning'); return; }
+
+  try {
+    await Promise.all([
+      fetch('/api/control/temperature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_temp: max, min_temp: min })
+      }),
+      fetch('/api/control/total-days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total_days: total })
+      })
+    ]);
+    showToast('Settings applied', 'success');
+  } catch { showToast('Failed to apply settings', 'error'); }
+}
+
+async function toggleWeekly() {
+  weeklyEnabled = !weeklyEnabled;
+  document.getElementById('weeklyTgl').className = 'tgl' + (weeklyEnabled ? ' on' : '');
+  try {
+    await fetch('/api/control/weekly-reduce', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: weeklyEnabled })
+    });
+    showToast('Weekly reduce: ' + (weeklyEnabled ? 'ON' : 'OFF'));
+  } catch { showToast('Failed', 'error'); }
+}
+
 async function reduceNow() {
   try {
-    const response = await fetch('/api/control/reduce-now', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (response.ok) {
-      showToast('Temperature reduction triggered');
-    } else {
-      throw new Error('Failed to reduce temperature');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Failed to reduce temperature', 'error');
-  }
+    await fetch('/api/control/reduce-now', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    showToast('Temperature reduction triggered');
+  } catch { showToast('Failed', 'error'); }
 }
 
-// Toggle sensor
-async function toggleSensor(sensor, enabled) {
+async function toggleSensor(n) {
+  const key = 's' + n;
+  sensorStates[key] = !sensorStates[key];
+  syncToggles();
   try {
-    const response = await fetch('/api/control/sensor', {
+    await fetch('/api/control/sensor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        sensor: sensor, 
-        state: enabled ? 'ON' : 'OFF' 
-      })
+      body: JSON.stringify({ sensor: n, state: sensorStates[key] ? 'ON' : 'OFF' })
     });
-    
-    if (response.ok) {
-      showToast(`Sensor ${sensor} ${enabled ? 'enabled' : 'disabled'}`);
-    } else {
-      throw new Error('Failed to toggle sensor');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Failed to toggle sensor', 'error');
-  }
+    showToast(`DS${n} sensor ${sensorStates[key] ? 'enabled' : 'disabled'}`);
+  } catch { showToast('Failed', 'error'); }
 }
 
-// Toast notification
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  const toastMessage = toast.querySelector('.toast-message');
-  const toastIcon = toast.querySelector('.toast-icon');
-  
-  toastMessage.textContent = message;
-  toast.className = 'toast';
-  
-  if (type === 'error') {
-    toast.classList.add('error');
-    toastIcon.textContent = '✗';
-  } else if (type === 'warning') {
-    toast.classList.add('warning');
-    toastIcon.textContent = '⚠';
-  } else {
-    toastIcon.textContent = '✓';
-  }
-  
-  toast.classList.add('show');
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3000);
+// ─────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el  = document.getElementById('toast');
+  const ico = document.getElementById('toastIcon');
+  const txt = document.getElementById('toastMsg');
+  txt.textContent = msg;
+  ico.textContent = type === 'error' ? '✕' : type === 'warning' ? '!' : '✓';
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
 }
 
-// Utility function to format timestamps
-function formatTimestamp(timestamp) {
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleString();
-}
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  startClock();
+  initNav();
+  initCharts();
+});
