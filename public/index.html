@@ -1,716 +1,446 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broodinnox - Smart Brooding System Dashboard</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 24px;
-        }
-
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-
-        .status-online {
-            background: #4caf50;
-            color: white;
-        }
-
-        .status-offline {
-            background: #f44336;
-            color: white;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 18px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-
-        .temperature-display {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .main-temp {
-            font-size: 48px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .main-temp-unit {
-            font-size: 24px;
-            color: #666;
-        }
-
-        .temp-label {
-            color: #666;
-            margin-top: 10px;
-        }
-
-        .sensor-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .sensor-item {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .sensor-temp {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .sensor-name {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .control-group {
-            margin-bottom: 20px;
-        }
-
-        .control-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .control-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a67d8;
-        }
-
-        .btn-success {
-            background: #4caf50;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ff9800;
-            color: white;
-        }
-
-        .btn-info {
-            background: #2196f3;
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #9e9e9e;
-            color: white;
-        }
-
-        .relay-status {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .relay-on {
-            background: #ff9800;
-            color: white;
-        }
-
-        .relay-off {
-            background: #9e9e9e;
-            color: white;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: #f5f5f5;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            transition: width 0.3s;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .alert-error {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #c62828;
-        }
-
-        .alert-warning {
-            background: #fff3e0;
-            color: #e65100;
-            border-left: 4px solid #e65100;
-        }
-
-        .chart-container {
-            margin-top: 20px;
-            height: 300px;
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            .header {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Broodinnox — Smart Brooding Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🐔 Broodinnox Smart Brooding System</h1>
-            <div>
-                <span id="connectionStatus" class="status-badge">Connecting...</span>
-                <span id="deviceId" style="margin-left: 10px; color: #666;"></span>
-            </div>
+  <div class="root">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-egg">🐣</div>
+        <div>
+          <div class="logo-name">BROODINNOX</div>
+          <div class="logo-sub">v3.0 · GSM</div>
         </div>
+      </div>
 
-        <div class="grid">
-            <!-- Temperature Overview -->
-            <div class="card">
-                <h3>🌡️ Temperature Overview</h3>
-                <div class="temperature-display">
-                    <div class="main-temp">
-                        <span id="avgTemp">--</span><span class="main-temp-unit">°C</span>
-                    </div>
-                    <div class="temp-label">Average Temperature</div>
-                </div>
-                <div class="sensor-grid">
-                    <div class="sensor-item">
-                        <div class="sensor-temp" id="sensor1Temp">--°C</div>
-                        <div class="sensor-name">Sensor 1</div>
-                        <div class="sensor-name" id="sensor1Status" style="font-size: 10px;"></div>
-                    </div>
-                    <div class="sensor-item">
-                        <div class="sensor-temp" id="sensor2Temp">--°C</div>
-                        <div class="sensor-name">Sensor 2</div>
-                        <div class="sensor-name" id="sensor2Status" style="font-size: 10px;"></div>
-                    </div>
-                    <div class="sensor-item">
-                        <div class="sensor-temp" id="sensor3Temp">--°C</div>
-                        <div class="sensor-name">Sensor 3</div>
-                        <div class="sensor-name" id="sensor3Status" style="font-size: 10px;"></div>
-                    </div>
-                    <div class="sensor-item">
-                        <div class="sensor-temp" id="sensor4Temp">--°C</div>
-                        <div class="sensor-name">Sensor 4</div>
-                        <div class="sensor-name" id="sensor4Status" style="font-size: 10px;"></div>
-                    </div>
-                </div>
-            </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-panel="overview">
+          <span class="nav-icon">◈</span>
+          <span>Overview</span>
+        </a>
+        <a href="#" class="nav-item" data-panel="sensors">
+          <span class="nav-icon">◉</span>
+          <span>Sensors</span>
+        </a>
+        <a href="#" class="nav-item" data-panel="controls">
+          <span class="nav-icon">◎</span>
+          <span>Controls</span>
+        </a>
+        <a href="#" class="nav-item" data-panel="settings">
+          <span class="nav-icon">◍</span>
+          <span>Settings</span>
+        </a>
+      </nav>
 
-            <!-- Temperature Control -->
-            <div class="card">
-                <h3>🎮 Temperature Control</h3>
-                <div class="control-group">
-                    <label>Maximum Temperature: <span id="maxTempValue">36</span>°C</label>
-                    <input type="range" id="maxTempSlider" min="20" max="50" value="36">
-                </div>
-                <div class="control-group">
-                    <label>Minimum Temperature: <span id="minTempValue">32</span>°C</label>
-                    <input type="range" id="minTempSlider" min="10" max="49" value="32">
-                </div>
-                <div class="control-group">
-                    <label>Total Brooding Days: <span id="totalDaysValue">30</span> days</label>
-                    <input type="range" id="totalDaysSlider" min="1" max="365" value="30">
-                </div>
-            </div>
-
-            <!-- Relay Control -->
-            <div class="card">
-                <h3>⚡ Relay Control</h3>
-                <div class="control-group">
-                    <label>Heater Status: <span id="relayStatus" class="relay-status relay-off">OFF</span></label>
-                    <div class="button-group">
-                        <button id="relayOnBtn" class="btn-success">Turn ON</button>
-                        <button id="relayOffBtn" class="btn-danger">Turn OFF</button>
-                        <button id="relayAutoBtn" class="btn-info">AUTO</button>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label>Control Mode: <strong id="controlMode">AUTO</strong></label>
-                </div>
-                <div class="control-group">
-                    <label>Signal Quality: <span id="signalQuality">--</span></label>
-                </div>
-            </div>
-
-            <!-- Animal Presets -->
-            <div class="card">
-                <h3>🐷 Animal Presets</h3>
-                <div class="button-group">
-                    <button id="animalChicken" class="btn-primary">🐔 Chicken</button>
-                    <button id="animalPig" class="btn-primary">🐷 Pig</button>
-                    <button id="animalTurkey" class="btn-primary">🦃 Turkey</button>
-                    <button id="animalDuck" class="btn-primary">🦆 Duck</button>
-                </div>
-                <div style="margin-top: 20px;">
-                    <button id="factoryResetBtn" class="btn-danger">⚠️ Factory Reset</button>
-                </div>
-            </div>
+      <div class="sidebar-status">
+        <div class="status-row">
+          <span class="status-label">SERVER</span>
+          <div class="status-pill" id="serverStatus">
+            <span class="dot"></span><span>Connecting</span>
+          </div>
         </div>
-
-        <div class="grid">
-            <!-- Progress & Stats -->
-            <div class="card">
-                <h3>📊 Brooding Progress</h3>
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill" style="width: 0%">0%</div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <p>Day: <strong id="currentDay">1</strong> / <strong id="totalDays">30</strong></p>
-                    <p>Weekly Reduction: <strong id="weeklyReduction">Enabled</strong></p>
-                    <p>Last Reduction Day: <strong id="lastReductionDay">0</strong></p>
-                </div>
-            </div>
-
-            <!-- Alerts & Errors -->
-            <div class="card">
-                <h3>⚠️ System Alerts</h3>
-                <div id="alertsContainer"></div>
-            </div>
-
-            <!-- Sensor Control -->
-            <div class="card">
-                <h3>🔘 Sensor Configuration</h3>
-                <div class="sensor-grid">
-                    <div>
-                        <label>
-                            <input type="checkbox" id="sensor1Enable" checked> Sensor 1 Enabled
-                        </label>
-                    </div>
-                    <div>
-                        <label>
-                            <input type="checkbox" id="sensor2Enable" checked> Sensor 2 Enabled
-                        </label>
-                    </div>
-                    <div>
-                        <label>
-                            <input type="checkbox" id="sensor3Enable" checked> Sensor 3 Enabled
-                        </label>
-                    </div>
-                    <div>
-                        <label>
-                            <input type="checkbox" id="sensor4Enable" checked> Sensor 4 Enabled
-                        </label>
-                    </div>
-                </div>
-            </div>
+        <div class="status-row">
+          <span class="status-label">MQTT</span>
+          <div class="status-pill" id="mqttStatus">
+            <span class="dot"></span><span>—</span>
+          </div>
         </div>
+        <div class="status-row">
+          <span class="status-label">DEVICE</span>
+          <div class="status-pill" id="deviceStatusPill">
+            <span class="dot"></span><span id="deviceStatusText">Offline</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- Temperature Chart -->
-        <div class="card">
-            <h3>📈 Temperature History</h3>
-            <div class="chart-container">
+      <div class="sidebar-device">
+        <div class="device-badge">
+          <div class="device-badge-label">ACTIVE DEVICE</div>
+          <div class="device-badge-id" id="sidebarDeviceId">—</div>
+        </div>
+        <div class="device-last">
+          Last seen: <span id="sidebarLastSeen">—</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="breadcrumb">
+            <span class="bc-root">Dashboard</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-current" id="bcCurrent">Overview</span>
+          </div>
+          <div class="topbar-time" id="topbarTime">—</div>
+        </div>
+        <div class="topbar-right">
+          <div class="failsafe-badge" id="failsafeBadge">
+            <span>⚠</span> FAILSAFE
+          </div>
+          <div class="temp-status-badge" id="tempStatusBadge">NORMAL</div>
+          <div class="device-id-tag" id="topbarDeviceId">—</div>
+        </div>
+      </header>
+
+      <!-- PANELS -->
+      <div class="panels">
+
+        <!-- ── OVERVIEW PANEL ── -->
+        <section class="panel active" id="panel-overview">
+
+          <!-- KPI row -->
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="kpi-icon">🌡</div>
+              <div class="kpi-body">
+                <div class="kpi-value accent-green" id="kpiTemp">—</div>
+                <div class="kpi-label">Avg Temperature</div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-icon">📅</div>
+              <div class="kpi-body">
+                <div class="kpi-value accent-blue" id="kpiDay">—</div>
+                <div class="kpi-label">Cycle Day</div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-icon">🔥</div>
+              <div class="kpi-body">
+                <div class="kpi-value" id="kpiRelay" style="color:var(--muted)">—</div>
+                <div class="kpi-label">Heater</div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-icon">⚙</div>
+              <div class="kpi-body">
+                <div class="kpi-value accent-orange" id="kpiMode">—</div>
+                <div class="kpi-label">Relay Mode</div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-icon">🌤</div>
+              <div class="kpi-body">
+                <div class="kpi-value accent-blue" id="kpiPeriod">—</div>
+                <div class="kpi-label">Time Period</div>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-icon">🐔</div>
+              <div class="kpi-body">
+                <div class="kpi-value" id="kpiAnimal" style="color:var(--text)">—</div>
+                <div class="kpi-label">Animal Profile</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-col grid -->
+          <div class="overview-grid">
+
+            <!-- Temperature card -->
+            <div class="card card-temp">
+              <div class="card-head">
+                <span class="card-title">Temperature</span>
+                <span class="card-badge" id="tempBadgeOv">NORMAL</span>
+              </div>
+              <div class="temp-hero">
+                <span class="temp-val" id="ovTemp">—</span>
+                <span class="temp-unit">°C</span>
+              </div>
+              <div class="temp-meta">
+                <div class="temp-meta-item">
+                  <div class="tm-label">MIN</div>
+                  <div class="tm-val accent-blue" id="ovMin">—°C</div>
+                </div>
+                <div class="temp-meta-item">
+                  <div class="tm-label">MAX</div>
+                  <div class="tm-val accent-orange" id="ovMax">—°C</div>
+                </div>
+                <div class="temp-meta-item">
+                  <div class="tm-label">ERROR</div>
+                  <div class="tm-val accent-green" id="ovError">OK</div>
+                </div>
+              </div>
+              <div class="chart-container">
                 <canvas id="tempChart"></canvas>
+              </div>
+              <div class="chart-range-btns">
+                <button class="range-btn active" data-range="1h">1H</button>
+                <button class="range-btn" data-range="6h">6H</button>
+                <button class="range-btn" data-range="24h">24H</button>
+              </div>
             </div>
-        </div>
-    </div>
 
-    <script>
-        const socket = io();
-        let tempChart = null;
-        let historyData = [];
-        const MAX_HISTORY = 50;
+            <!-- Right col -->
+            <div class="right-stack">
 
-        // Initialize Chart
-        function initChart() {
-            const ctx = document.getElementById('tempChart').getContext('2d');
-            tempChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Average Temperature (°C)',
-                        data: [],
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Max Temp',
-                        data: [],
-                        borderColor: '#f44336',
-                        borderDash: [5, 5],
-                        fill: false
-                    }, {
-                        label: 'Min Temp',
-                        data: [],
-                        borderColor: '#4caf50',
-                        borderDash: [5, 5],
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Temperature (°C)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Time'
-                            }
-                        }
-                    }
-                }
-            });
-        }
+              <!-- Heater status -->
+              <div class="card card-heater">
+                <div class="card-head">
+                  <span class="card-title">Heater</span>
+                  <span id="relayModeTag" class="mode-tag">AUTO</span>
+                </div>
+                <div class="heater-center">
+                  <div class="heater-ring" id="heaterRing">
+                    <span class="heater-emoji">🔥</span>
+                  </div>
+                  <div class="heater-state" id="heaterState">—</div>
+                  <div class="heater-sub" id="heaterSub">Waiting for data...</div>
+                </div>
+                <div class="cycle-pill" id="cyclePill">
+                  <span class="cycle-dot" id="cycleDot"></span>
+                  <span id="cycleText">Evening cycle: —</span>
+                </div>
+              </div>
 
-        // Update chart with new data
-        function updateChart(data) {
-            if (!tempChart) return;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            historyData.push({
-                time: timestamp,
-                avg: data.ave_temp,
-                max: data.max_temp,
-                min: data.min_temp
-            });
-            
-            if (historyData.length > MAX_HISTORY) {
-                historyData.shift();
-            }
-            
-            tempChart.data.labels = historyData.map(d => d.time);
-            tempChart.data.datasets[0].data = historyData.map(d => d.avg);
-            tempChart.data.datasets[1].data = historyData.map(d => d.max);
-            tempChart.data.datasets[2].data = historyData.map(d => d.min);
-            tempChart.update();
-        }
+              <!-- Progress -->
+              <div class="card card-progress">
+                <div class="card-head"><span class="card-title">Brooding Progress</span></div>
+                <div class="progress-nums">
+                  <span class="prog-day" id="progDay">—</span>
+                  <span class="prog-sep">of</span>
+                  <span class="prog-total" id="progTotal">—</span>
+                  <span class="prog-label">days</span>
+                </div>
+                <div class="prog-track">
+                  <div class="prog-fill" id="progFill" style="width:0%"></div>
+                </div>
+                <div class="prog-pct" id="progPct">0%</div>
+              </div>
 
-        // Update UI with sensor data
-        function updateUI(data) {
-            // Temperature values
-            document.getElementById('avgTemp').innerHTML = data.ave_temp !== -999 ? data.ave_temp.toFixed(1) : '--';
-            document.getElementById('sensor1Temp').innerHTML = data.sensor1 ? data.sensor1.toFixed(1) + '°C' : '--°C';
-            document.getElementById('sensor2Temp').innerHTML = data.sensor2 ? data.sensor2.toFixed(1) + '°C' : '--°C';
-            document.getElementById('sensor3Temp').innerHTML = data.sensor3 ? data.sensor3.toFixed(1) + '°C' : '--°C';
-            document.getElementById('sensor4Temp').innerHTML = data.sensor4 ? data.sensor4.toFixed(1) + '°C' : '--°C';
-            
-            // Control values
-            document.getElementById('maxTempValue').innerHTML = data.max_temp;
-            document.getElementById('minTempValue').innerHTML = data.min_temp;
-            document.getElementById('totalDaysValue').innerHTML = data.total_days;
-            document.getElementById('currentDay').innerHTML = data.day;
-            document.getElementById('totalDays').innerHTML = data.total_days;
-            
-            // Sliders
-            document.getElementById('maxTempSlider').value = data.max_temp;
-            document.getElementById('minTempSlider').value = data.min_temp;
-            document.getElementById('totalDaysSlider').value = data.total_days;
-            
-            // Relay status
-            const relayStatus = document.getElementById('relayStatus');
-            if (data.relay_state) {
-                relayStatus.innerHTML = 'ON';
-                relayStatus.className = 'relay-status relay-on';
-            } else {
-                relayStatus.innerHTML = 'OFF';
-                relayStatus.className = 'relay-status relay-off';
-            }
-            
-            // Control mode
-            document.getElementById('controlMode').innerHTML = data.manual_control ? 'MANUAL' : 'AUTO';
-            
-            // Signal quality
-            document.getElementById('signalQuality').innerHTML = data.signal_quality || '--';
-            
-            // Progress
-            const progress = (data.day / data.total_days) * 100;
-            const progressFill = document.getElementById('progressFill');
-            progressFill.style.width = progress + '%';
-            progressFill.innerHTML = Math.round(progress) + '%';
-            
-            // Sensor enable checkboxes
-            document.getElementById('sensor1Enable').checked = data.s1_enabled;
-            document.getElementById('sensor2Enable').checked = data.s2_enabled;
-            document.getElementById('sensor3Enable').checked = data.s3_enabled;
-            document.getElementById('sensor4Enable').checked = data.s4_enabled;
-            
-            // Sensor status indicators
-            document.getElementById('sensor1Status').innerHTML = data.s1_enabled ? '✓ Enabled' : '✗ Disabled';
-            document.getElementById('sensor2Status').innerHTML = data.s2_enabled ? '✓ Enabled' : '✗ Disabled';
-            document.getElementById('sensor3Status').innerHTML = data.s3_enabled ? '✓ Enabled' : '✗ Disabled';
-            document.getElementById('sensor4Status').innerHTML = data.s4_enabled ? '✓ Enabled' : '✗ Disabled';
-            
-            // Alerts
-            updateAlerts(data);
-            
-            // Update chart
-            updateChart(data);
-        }
-        
-        function updateAlerts(data) {
-            const alertsContainer = document.getElementById('alertsContainer');
-            alertsContainer.innerHTML = '';
-            
-            if (data.failsafe_mode) {
-                alertsContainer.innerHTML += '<div class="alert alert-error">⚠️ FAILSAFE MODE: All sensors failed! Heater forced ON.</div>';
-            }
-            
-            if (data.sensor_error && !data.failsafe_mode) {
-                alertsContainer.innerHTML += '<div class="alert alert-warning">⚠️ Sensor Error: Some sensors are not responding</div>';
-            }
-            
-            if (data.mismatch_error) {
-                alertsContainer.innerHTML += '<div class="alert alert-warning">⚠️ Sensor Mismatch: Large temperature difference detected</div>';
-            }
-            
-            if (data.error && data.error.length > 0) {
-                alertsContainer.innerHTML += `<div class="alert alert-warning">⚠️ ${data.error}</div>`;
-            }
-            
-            if (alertsContainer.innerHTML === '') {
-                alertsContainer.innerHTML = '<div style="color: #4caf50;">✓ All systems normal</div>';
-            }
-        }
-        
-        // API Calls
-        async function apiCall(endpoint, method, body) {
-            try {
-                const response = await fetch(endpoint, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('API Error:', error);
-            }
-        }
-        
-        // Event Listeners
-        document.getElementById('maxTempSlider').addEventListener('input', (e) => {
-            document.getElementById('maxTempValue').innerHTML = e.target.value;
-        });
-        
-        document.getElementById('maxTempSlider').addEventListener('change', (e) => {
-            apiCall('/api/control/max_temp', 'POST', { value: e.target.value });
-        });
-        
-        document.getElementById('minTempSlider').addEventListener('input', (e) => {
-            document.getElementById('minTempValue').innerHTML = e.target.value;
-        });
-        
-        document.getElementById('minTempSlider').addEventListener('change', (e) => {
-            apiCall('/api/control/min_temp', 'POST', { value: e.target.value });
-        });
-        
-        document.getElementById('totalDaysSlider').addEventListener('input', (e) => {
-            document.getElementById('totalDaysValue').innerHTML = e.target.value;
-        });
-        
-        document.getElementById('totalDaysSlider').addEventListener('change', (e) => {
-            apiCall('/api/control/total_days', 'POST', { value: e.target.value });
-        });
-        
-        document.getElementById('relayOnBtn').addEventListener('click', () => {
-            apiCall('/api/control/relay', 'POST', { state: 'ON' });
-        });
-        
-        document.getElementById('relayOffBtn').addEventListener('click', () => {
-            apiCall('/api/control/relay', 'POST', { state: 'OFF' });
-        });
-        
-        document.getElementById('relayAutoBtn').addEventListener('click', () => {
-            apiCall('/api/control/relay', 'POST', { state: 'AUTO' });
-        });
-        
-        document.getElementById('sensor1Enable').addEventListener('change', (e) => {
-            apiCall('/api/control/sensor', 'POST', { sensor: 1, enabled: e.target.checked });
-        });
-        
-        document.getElementById('sensor2Enable').addEventListener('change', (e) => {
-            apiCall('/api/control/sensor', 'POST', { sensor: 2, enabled: e.target.checked });
-        });
-        
-        document.getElementById('sensor3Enable').addEventListener('change', (e) => {
-            apiCall('/api/control/sensor', 'POST', { sensor: 3, enabled: e.target.checked });
-        });
-        
-        document.getElementById('sensor4Enable').addEventListener('change', (e) => {
-            apiCall('/api/control/sensor', 'POST', { sensor: 4, enabled: e.target.checked });
-        });
-        
-        document.getElementById('animalChicken').addEventListener('click', () => {
-            apiCall('/api/control/animal_preset', 'POST', { animal: 'Chicken' });
-        });
-        
-        document.getElementById('animalPig').addEventListener('click', () => {
-            apiCall('/api/control/animal_preset', 'POST', { animal: 'Pig' });
-        });
-        
-        document.getElementById('animalTurkey').addEventListener('click', () => {
-            apiCall('/api/control/animal_preset', 'POST', { animal: 'Turkey' });
-        });
-        
-        document.getElementById('animalDuck').addEventListener('click', () => {
-            apiCall('/api/control/animal_preset', 'POST', { animal: 'Duck' });
-        });
-        
-        document.getElementById('factoryResetBtn').addEventListener('click', () => {
-            if (confirm('⚠️ WARNING: Factory reset will restore default settings and restart the device! Continue?')) {
-                apiCall('/api/control/factory_reset', 'POST', {});
-                alert('Factory reset command sent. Device will restart...');
-            }
-        });
-        
-        // Socket.io event handlers
-        socket.on('connect', () => {
-            console.log('Connected to server');
-        });
-        
-        socket.on('connection_status', (data) => {
-            const statusEl = document.getElementById('connectionStatus');
-            if (data.connected) {
-                statusEl.innerHTML = '🟢 Device Online';
-                statusEl.className = 'status-badge status-online';
-            } else {
-                statusEl.innerHTML = '🔴 Device Offline';
-                statusEl.className = 'status-badge status-offline';
-            }
-        });
-        
-        socket.on('sensor_data', (data) => {
-            document.getElementById('deviceId').innerHTML = `ID: ${data.device_id}`;
-            updateUI(data);
-        });
-        
-        socket.on('status_update', (data) => {
-            console.log('Status update:', data);
-        });
-        
-        // Initialize
-        initChart();
-        
-        // Fetch initial data
-        fetch('/api/data')
-            .then(res => res.json())
-            .then(data => {
-                updateUI(data);
-            });
-    </script>
+              <!-- System info -->
+              <div class="card card-sysinfo">
+                <div class="card-head"><span class="card-title">System</span></div>
+                <div class="info-list">
+                  <div class="info-row">
+                    <span class="info-k">Device ID</span>
+                    <span class="info-v" id="infoDevId">—</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-k">Transport</span>
+                    <span class="info-v" id="infoTransport">—</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-k">Mode</span>
+                    <span class="info-v" id="infoMode">—</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-k">Error Status</span>
+                    <span class="info-v accent-green" id="infoError">—</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-k">Weekly Reduce</span>
+                    <span class="info-v" id="infoWeekly">—</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-k">Failsafe</span>
+                    <span class="info-v" id="infoFailsafe">—</span>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /right-stack -->
+          </div><!-- /overview-grid -->
+        </section>
+
+        <!-- ── SENSORS PANEL ── -->
+        <section class="panel" id="panel-sensors">
+          <div class="section-header">
+            <h2>DS18B20 Sensor Readings</h2>
+            <p>Live individual sensor temperatures and status</p>
+          </div>
+          <div class="sensors-big-grid">
+            <div class="sensor-big" id="sb1">
+              <div class="sb-label">DS1</div>
+              <div class="sb-temp" id="sb1temp">—</div>
+              <div class="sb-unit">°C</div>
+              <div class="sb-status" id="sb1status">Waiting</div>
+              <div class="sb-toggle">
+                <label class="tgl-label">Active</label>
+                <div class="tgl" id="tgl1" onclick="toggleSensor(1)">
+                  <div class="tgl-knob"></div>
+                </div>
+              </div>
+            </div>
+            <div class="sensor-big" id="sb2">
+              <div class="sb-label">DS2</div>
+              <div class="sb-temp" id="sb2temp">—</div>
+              <div class="sb-unit">°C</div>
+              <div class="sb-status" id="sb2status">Waiting</div>
+              <div class="sb-toggle">
+                <label class="tgl-label">Active</label>
+                <div class="tgl" id="tgl2" onclick="toggleSensor(2)">
+                  <div class="tgl-knob"></div>
+                </div>
+              </div>
+            </div>
+            <div class="sensor-big" id="sb3">
+              <div class="sb-label">DS3</div>
+              <div class="sb-temp" id="sb3temp">—</div>
+              <div class="sb-unit">°C</div>
+              <div class="sb-status" id="sb3status">Waiting</div>
+              <div class="sb-toggle">
+                <label class="tgl-label">Active</label>
+                <div class="tgl" id="tgl3" onclick="toggleSensor(3)">
+                  <div class="tgl-knob"></div>
+                </div>
+              </div>
+            </div>
+            <div class="sensor-big" id="sb4">
+              <div class="sb-label">DS4</div>
+              <div class="sb-temp" id="sb4temp">—</div>
+              <div class="sb-unit">°C</div>
+              <div class="sb-status" id="sb4status">Waiting</div>
+              <div class="sb-toggle">
+                <label class="tgl-label">Active</label>
+                <div class="tgl" id="tgl4" onclick="toggleSensor(4)">
+                  <div class="tgl-knob"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card sensor-chart-card" style="margin-top:20px;">
+            <div class="card-head"><span class="card-title">Sensor Comparison</span></div>
+            <div class="sensor-chart-wrap">
+              <canvas id="sensorChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── CONTROLS PANEL ── -->
+        <section class="panel" id="panel-controls">
+          <div class="section-header">
+            <h2>Device Controls</h2>
+            <p>Send commands directly to the ESP32 via MQTT</p>
+          </div>
+          <div class="controls-grid">
+
+            <div class="card">
+              <div class="card-head"><span class="card-title">Heater Relay</span></div>
+              <div class="relay-btns">
+                <button class="relay-btn relay-on" onclick="controlRelay('ON')">
+                  <span>🔥</span><span>FORCE ON</span>
+                </button>
+                <button class="relay-btn relay-off" onclick="controlRelay('OFF')">
+                  <span>❄</span><span>FORCE OFF</span>
+                </button>
+                <button class="relay-btn relay-auto" onclick="controlRelay('AUTO')">
+                  <span>⚙</span><span>AUTO</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><span class="card-title">Temperature Limits</span></div>
+              <div class="slider-group">
+                <div class="slider-row">
+                  <label>Maximum <span class="slide-val accent-orange" id="maxTempDisplay">36°C</span></label>
+                  <input type="range" class="slide" id="maxTempSlider" min="25" max="45" value="36" step="1"
+                    oninput="document.getElementById('maxTempDisplay').textContent=this.value+'°C'">
+                </div>
+                <div class="slider-row">
+                  <label>Minimum <span class="slide-val accent-blue" id="minTempDisplay">32°C</span></label>
+                  <input type="range" class="slide" id="minTempSlider" min="20" max="40" value="32" step="1"
+                    oninput="document.getElementById('minTempDisplay').textContent=this.value+'°C'">
+                </div>
+                <div class="slider-row">
+                  <label>Total Days <span class="slide-val" id="totalDaysDisplay">30</span></label>
+                  <input type="range" class="slide" id="totalDaysSlider" min="1" max="90" value="30" step="1"
+                    oninput="document.getElementById('totalDaysDisplay').textContent=this.value">
+                </div>
+                <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><span class="card-title">Advanced</span></div>
+              <div class="adv-list">
+                <div class="adv-row">
+                  <span>Weekly Temp Reduction</span>
+                  <div class="tgl on" id="weeklyTgl" onclick="toggleWeekly()">
+                    <div class="tgl-knob"></div>
+                  </div>
+                </div>
+                <div class="adv-row">
+                  <span>Force Reduce Now</span>
+                  <button class="mini-btn" onclick="reduceNow()">APPLY</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── SETTINGS PANEL ── -->
+        <section class="panel" id="panel-settings">
+          <div class="section-header">
+            <h2>Connection Settings</h2>
+            <p>Configure MQTT broker and device target</p>
+          </div>
+          <div class="settings-form-card card">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>MQTT Broker</label>
+                <input class="form-inp" id="cfgBroker" value="mqtt://test.mosquitto.org" />
+              </div>
+              <div class="form-field">
+                <label>Device ID</label>
+                <input class="form-inp" id="cfgDeviceId" value="BROODIINNOX-001" />
+              </div>
+            </div>
+            <div class="form-note">
+              Changes here update the server-side MQTT connection. The server auto-reconnects on save.
+            </div>
+          </div>
+
+          <div class="section-header" style="margin-top:28px;">
+            <h2>API Endpoints</h2>
+            <p>REST API available from the server</p>
+          </div>
+          <div class="api-list card">
+            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/device</span><span class="api-desc">Current device data</span></div>
+            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/history</span><span class="api-desc">Historical readings (limit=N)</span></div>
+            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/health</span><span class="api-desc">Server health check</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/relay</span><span class="api-desc">{"command":"ON|OFF|AUTO"}</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/temperature</span><span class="api-desc">{"max_temp":36,"min_temp":32}</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/total-days</span><span class="api-desc">{"total_days":30}</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/sensor</span><span class="api-desc">{"sensor":1,"state":"ON"}</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/weekly-reduce</span><span class="api-desc">{"enabled":true}</span></div>
+            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/reduce-now</span><span class="api-desc">Trigger immediate reduction</span></div>
+            <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/history</span><span class="api-desc">Clear historical data</span></div>
+          </div>
+        </section>
+
+      </div><!-- /panels -->
+
+      <footer class="footer">
+        <span>Broodinnox v3.0-GSM · ESP32 + A7670G · MQTT/Socket.IO</span>
+        <span>Author: Muyirama Sezerano Liven</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon">✓</span>
+    <span id="toastMsg">—</span>
+  </div>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
