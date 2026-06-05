@@ -1,446 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Broodinnox — Smart Brooding Control</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BROODINNOX — Control Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="root">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="logo-egg">🐣</div>
-        <div>
-          <div class="logo-name">BROODINNOX</div>
-          <div class="logo-sub">v3.0 · GSM</div>
+<!-- Scanline overlay -->
+<div class="scanlines" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M20 8 C14 8 10 13 10 20 C10 27 14 32 20 32 C26 32 30 27 30 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
+          <path d="M20 8 L20 4M32 20 L36 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="header-title">
+        <h1>BROODINNOX</h1>
+        <p>Smart Brooding Control Center</p>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="progress-bar-wrap" title="Brooding cycle progress">
+        <div class="progress-label">
+          <span>CYCLE DAY</span>
+          <span><span id="hdr-day">—</span> / <span id="hdr-total">—</span></span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="cycle-progress"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="conn-block" id="conn-block">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span class="conn-label" id="conn-label">CONNECTING</span>
+      </div>
+      <div class="device-chip" id="hdr-device-id">—</div>
+      <div class="signal-block" title="GSM signal quality">
+        <svg viewBox="0 0 20 14" fill="none" class="signal-icon">
+          <rect x="0"  y="10" width="3" height="4" rx="0.5" class="sig-bar" id="sig1"/>
+          <rect x="4"  y="7"  width="3" height="7" rx="0.5" class="sig-bar" id="sig2"/>
+          <rect x="8"  y="4"  width="3" height="10" rx="0.5" class="sig-bar" id="sig3"/>
+          <rect x="12" y="1"  width="3" height="13" rx="0.5" class="sig-bar" id="sig4"/>
+        </svg>
+        <span id="signal-val">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN GRID ════════════════════════════════════════════════════════ -->
+  <main class="grid">
+
+    <!-- ── Column A ─────────────────────────────────────────────────────── -->
+    <section class="col col-a">
+
+      <!-- TEMPERATURE DISPLAY -->
+      <div class="panel panel-temp" id="panel-temp">
+        <div class="panel-header">
+          <span class="panel-tag">THERMAL</span>
+          <span class="temp-badge" id="temp-badge">NORMAL</span>
+        </div>
+        <div class="temp-hero">
+          <div class="temp-main-val">
+            <span id="ave-temp">—</span>
+            <span class="temp-deg">°C</span>
+          </div>
+          <div class="temp-range-row">
+            <div class="range-chip">
+              <span class="rc-label">MIN</span>
+              <span class="rc-val" id="disp-min">—</span>
+              <span class="rc-unit">°C</span>
+            </div>
+            <div class="range-sep"></div>
+            <div class="range-chip">
+              <span class="rc-label">MAX</span>
+              <span class="rc-val" id="disp-max">—</span>
+              <span class="rc-unit">°C</span>
+            </div>
+            <div class="range-sep"></div>
+            <div class="range-chip">
+              <span class="rc-label">LAST UPDATE</span>
+              <span class="rc-val small" id="disp-lastseen">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Sensor readouts -->
+        <div class="sensor-row">
+          <div class="sensor-chip" id="sc1">
+            <span class="sc-id">DS1</span>
+            <span class="sc-val" id="sc-val1">—</span>
+          </div>
+          <div class="sensor-chip" id="sc2">
+            <span class="sc-id">DS2</span>
+            <span class="sc-val" id="sc-val2">—</span>
+          </div>
+          <div class="sensor-chip" id="sc3">
+            <span class="sc-id">DS3</span>
+            <span class="sc-val" id="sc-val3">—</span>
+          </div>
+          <div class="sensor-chip" id="sc4">
+            <span class="sc-id">DS4</span>
+            <span class="sc-val" id="sc-val4">—</span>
+          </div>
         </div>
       </div>
 
-      <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-panel="overview">
-          <span class="nav-icon">◈</span>
-          <span>Overview</span>
-        </a>
-        <a href="#" class="nav-item" data-panel="sensors">
-          <span class="nav-icon">◉</span>
-          <span>Sensors</span>
-        </a>
-        <a href="#" class="nav-item" data-panel="controls">
-          <span class="nav-icon">◎</span>
-          <span>Controls</span>
-        </a>
-        <a href="#" class="nav-item" data-panel="settings">
-          <span class="nav-icon">◍</span>
-          <span>Settings</span>
-        </a>
-      </nav>
-
-      <div class="sidebar-status">
-        <div class="status-row">
-          <span class="status-label">SERVER</span>
-          <div class="status-pill" id="serverStatus">
-            <span class="dot"></span><span>Connecting</span>
-          </div>
+      <!-- STATUS ROW -->
+      <div class="status-row">
+        <div class="stat-tile" id="tile-relay">
+          <span class="st-label">HEATER</span>
+          <span class="st-val" id="tile-relay-val">OFF</span>
         </div>
-        <div class="status-row">
-          <span class="status-label">MQTT</span>
-          <div class="status-pill" id="mqttStatus">
-            <span class="dot"></span><span>—</span>
-          </div>
+        <div class="stat-tile" id="tile-mode">
+          <span class="st-label">MODE</span>
+          <span class="st-val" id="tile-mode-val">AUTO</span>
         </div>
-        <div class="status-row">
-          <span class="status-label">DEVICE</span>
-          <div class="status-pill" id="deviceStatusPill">
-            <span class="dot"></span><span id="deviceStatusText">Offline</span>
-          </div>
+        <div class="stat-tile" id="tile-failsafe">
+          <span class="st-label">FAILSAFE</span>
+          <span class="st-val" id="tile-failsafe-val">OFF</span>
+        </div>
+        <div class="stat-tile" id="tile-error">
+          <span class="st-label">SENSOR ERR</span>
+          <span class="st-val" id="tile-error-val">NONE</span>
         </div>
       </div>
 
-      <div class="sidebar-device">
-        <div class="device-badge">
-          <div class="device-badge-label">ACTIVE DEVICE</div>
-          <div class="device-badge-id" id="sidebarDeviceId">—</div>
+      <!-- TEMPERATURE CHART -->
+      <div class="panel panel-chart">
+        <div class="panel-header">
+          <span class="panel-tag">TEMPERATURE HISTORY</span>
+          <div class="chart-tab-group">
+            <button class="chart-tab active" data-range="1h">1H</button>
+            <button class="chart-tab" data-range="6h">6H</button>
+            <button class="chart-tab" data-range="24h">24H</button>
+            <button class="chart-tab" data-range="all">ALL</button>
+          </div>
         </div>
-        <div class="device-last">
-          Last seen: <span id="sidebarLastSeen">—</span>
+        <div class="chart-wrap">
+          <canvas id="temp-chart"></canvas>
         </div>
       </div>
-    </aside>
 
-    <!-- MAIN -->
-    <main class="main">
+    </section>
 
-      <!-- TOP BAR -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <div class="breadcrumb">
-            <span class="bc-root">Dashboard</span>
-            <span class="bc-sep">›</span>
-            <span class="bc-current" id="bcCurrent">Overview</span>
-          </div>
-          <div class="topbar-time" id="topbarTime">—</div>
+    <!-- ── Column B ─────────────────────────────────────────────────────── -->
+    <section class="col col-b">
+
+      <!-- HEATER CONTROL -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-tag">HEATER CONTROL</span>
+          <span class="panel-note">Sends MQTT to firmware relay topic</span>
         </div>
-        <div class="topbar-right">
-          <div class="failsafe-badge" id="failsafeBadge">
-            <span>⚠</span> FAILSAFE
-          </div>
-          <div class="temp-status-badge" id="tempStatusBadge">NORMAL</div>
-          <div class="device-id-tag" id="topbarDeviceId">—</div>
+        <div class="relay-btns">
+          <button class="relay-btn rb-on"   onclick="sendRelay('ON')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8 6 6 9 6 12a6 6 0 0012 0c0-3-2-6-6-10z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 12v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>HEATER ON</span>
+          </button>
+          <button class="relay-btn rb-off"  onclick="sendRelay('OFF')">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>HEATER OFF</span>
+          </button>
+          <button class="relay-btn rb-auto" onclick="sendRelay('AUTO')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v2m0 12v2M4 12H2m20 0h-2M6.34 6.34 4.93 4.93m13.74 0-1.41 1.41M6.34 17.66l-1.41 1.41m13.74 0-1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>AUTO MODE</span>
+          </button>
         </div>
-      </header>
+      </div>
 
-      <!-- PANELS -->
-      <div class="panels">
-
-        <!-- ── OVERVIEW PANEL ── -->
-        <section class="panel active" id="panel-overview">
-
-          <!-- KPI row -->
-          <div class="kpi-row">
-            <div class="kpi">
-              <div class="kpi-icon">🌡</div>
-              <div class="kpi-body">
-                <div class="kpi-value accent-green" id="kpiTemp">—</div>
-                <div class="kpi-label">Avg Temperature</div>
-              </div>
+      <!-- TEMPERATURE SETTINGS -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-tag">TEMPERATURE SETPOINTS</span>
+        </div>
+        <div class="settings-body">
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span>Maximum °C</span>
+              <span class="slider-val" id="max-temp-val">36</span>
             </div>
-            <div class="kpi">
-              <div class="kpi-icon">📅</div>
-              <div class="kpi-body">
-                <div class="kpi-value accent-blue" id="kpiDay">—</div>
-                <div class="kpi-label">Cycle Day</div>
-              </div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-icon">🔥</div>
-              <div class="kpi-body">
-                <div class="kpi-value" id="kpiRelay" style="color:var(--muted)">—</div>
-                <div class="kpi-label">Heater</div>
-              </div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-icon">⚙</div>
-              <div class="kpi-body">
-                <div class="kpi-value accent-orange" id="kpiMode">—</div>
-                <div class="kpi-label">Relay Mode</div>
-              </div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-icon">🌤</div>
-              <div class="kpi-body">
-                <div class="kpi-value accent-blue" id="kpiPeriod">—</div>
-                <div class="kpi-label">Time Period</div>
-              </div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-icon">🐔</div>
-              <div class="kpi-body">
-                <div class="kpi-value" id="kpiAnimal" style="color:var(--text)">—</div>
-                <div class="kpi-label">Animal Profile</div>
-              </div>
-            </div>
+            <input type="range" class="slider" id="max-temp-slider" min="25" max="50" value="36" step="1">
           </div>
-
-          <!-- Two-col grid -->
-          <div class="overview-grid">
-
-            <!-- Temperature card -->
-            <div class="card card-temp">
-              <div class="card-head">
-                <span class="card-title">Temperature</span>
-                <span class="card-badge" id="tempBadgeOv">NORMAL</span>
-              </div>
-              <div class="temp-hero">
-                <span class="temp-val" id="ovTemp">—</span>
-                <span class="temp-unit">°C</span>
-              </div>
-              <div class="temp-meta">
-                <div class="temp-meta-item">
-                  <div class="tm-label">MIN</div>
-                  <div class="tm-val accent-blue" id="ovMin">—°C</div>
-                </div>
-                <div class="temp-meta-item">
-                  <div class="tm-label">MAX</div>
-                  <div class="tm-val accent-orange" id="ovMax">—°C</div>
-                </div>
-                <div class="temp-meta-item">
-                  <div class="tm-label">ERROR</div>
-                  <div class="tm-val accent-green" id="ovError">OK</div>
-                </div>
-              </div>
-              <div class="chart-container">
-                <canvas id="tempChart"></canvas>
-              </div>
-              <div class="chart-range-btns">
-                <button class="range-btn active" data-range="1h">1H</button>
-                <button class="range-btn" data-range="6h">6H</button>
-                <button class="range-btn" data-range="24h">24H</button>
-              </div>
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span>Minimum °C</span>
+              <span class="slider-val" id="min-temp-val">32</span>
             </div>
-
-            <!-- Right col -->
-            <div class="right-stack">
-
-              <!-- Heater status -->
-              <div class="card card-heater">
-                <div class="card-head">
-                  <span class="card-title">Heater</span>
-                  <span id="relayModeTag" class="mode-tag">AUTO</span>
-                </div>
-                <div class="heater-center">
-                  <div class="heater-ring" id="heaterRing">
-                    <span class="heater-emoji">🔥</span>
-                  </div>
-                  <div class="heater-state" id="heaterState">—</div>
-                  <div class="heater-sub" id="heaterSub">Waiting for data...</div>
-                </div>
-                <div class="cycle-pill" id="cyclePill">
-                  <span class="cycle-dot" id="cycleDot"></span>
-                  <span id="cycleText">Evening cycle: —</span>
-                </div>
-              </div>
-
-              <!-- Progress -->
-              <div class="card card-progress">
-                <div class="card-head"><span class="card-title">Brooding Progress</span></div>
-                <div class="progress-nums">
-                  <span class="prog-day" id="progDay">—</span>
-                  <span class="prog-sep">of</span>
-                  <span class="prog-total" id="progTotal">—</span>
-                  <span class="prog-label">days</span>
-                </div>
-                <div class="prog-track">
-                  <div class="prog-fill" id="progFill" style="width:0%"></div>
-                </div>
-                <div class="prog-pct" id="progPct">0%</div>
-              </div>
-
-              <!-- System info -->
-              <div class="card card-sysinfo">
-                <div class="card-head"><span class="card-title">System</span></div>
-                <div class="info-list">
-                  <div class="info-row">
-                    <span class="info-k">Device ID</span>
-                    <span class="info-v" id="infoDevId">—</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-k">Transport</span>
-                    <span class="info-v" id="infoTransport">—</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-k">Mode</span>
-                    <span class="info-v" id="infoMode">—</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-k">Error Status</span>
-                    <span class="info-v accent-green" id="infoError">—</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-k">Weekly Reduce</span>
-                    <span class="info-v" id="infoWeekly">—</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-k">Failsafe</span>
-                    <span class="info-v" id="infoFailsafe">—</span>
-                  </div>
-                </div>
-              </div>
-
-            </div><!-- /right-stack -->
-          </div><!-- /overview-grid -->
-        </section>
-
-        <!-- ── SENSORS PANEL ── -->
-        <section class="panel" id="panel-sensors">
-          <div class="section-header">
-            <h2>DS18B20 Sensor Readings</h2>
-            <p>Live individual sensor temperatures and status</p>
+            <input type="range" class="slider" id="min-temp-slider" min="10" max="45" value="32" step="1">
           </div>
-          <div class="sensors-big-grid">
-            <div class="sensor-big" id="sb1">
-              <div class="sb-label">DS1</div>
-              <div class="sb-temp" id="sb1temp">—</div>
-              <div class="sb-unit">°C</div>
-              <div class="sb-status" id="sb1status">Waiting</div>
-              <div class="sb-toggle">
-                <label class="tgl-label">Active</label>
-                <div class="tgl" id="tgl1" onclick="toggleSensor(1)">
-                  <div class="tgl-knob"></div>
-                </div>
-              </div>
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <span>Cycle Days</span>
+              <span class="slider-val" id="total-days-val">30</span>
             </div>
-            <div class="sensor-big" id="sb2">
-              <div class="sb-label">DS2</div>
-              <div class="sb-temp" id="sb2temp">—</div>
-              <div class="sb-unit">°C</div>
-              <div class="sb-status" id="sb2status">Waiting</div>
-              <div class="sb-toggle">
-                <label class="tgl-label">Active</label>
-                <div class="tgl" id="tgl2" onclick="toggleSensor(2)">
-                  <div class="tgl-knob"></div>
-                </div>
-              </div>
-            </div>
-            <div class="sensor-big" id="sb3">
-              <div class="sb-label">DS3</div>
-              <div class="sb-temp" id="sb3temp">—</div>
-              <div class="sb-unit">°C</div>
-              <div class="sb-status" id="sb3status">Waiting</div>
-              <div class="sb-toggle">
-                <label class="tgl-label">Active</label>
-                <div class="tgl" id="tgl3" onclick="toggleSensor(3)">
-                  <div class="tgl-knob"></div>
-                </div>
-              </div>
-            </div>
-            <div class="sensor-big" id="sb4">
-              <div class="sb-label">DS4</div>
-              <div class="sb-temp" id="sb4temp">—</div>
-              <div class="sb-unit">°C</div>
-              <div class="sb-status" id="sb4status">Waiting</div>
-              <div class="sb-toggle">
-                <label class="tgl-label">Active</label>
-                <div class="tgl" id="tgl4" onclick="toggleSensor(4)">
-                  <div class="tgl-knob"></div>
-                </div>
-              </div>
-            </div>
+            <input type="range" class="slider" id="total-days-slider" min="1" max="120" value="30" step="1">
           </div>
-          <div class="card sensor-chart-card" style="margin-top:20px;">
-            <div class="card-head"><span class="card-title">Sensor Comparison</span></div>
-            <div class="sensor-chart-wrap">
-              <canvas id="sensorChart"></canvas>
+          <button class="apply-btn" id="apply-btn" onclick="applySettings()">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            APPLY SETTINGS
+          </button>
+        </div>
+      </div>
+
+      <!-- SENSOR MANAGEMENT -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-tag">SENSOR MANAGEMENT</span>
+          <span class="panel-note">Toggle disables sensor from avg calculation</span>
+        </div>
+        <div class="sensor-toggles">
+          <label class="toggle-row" id="tr1">
+            <div class="tr-info">
+              <span class="tr-name">DS18B20 — Sensor 1</span>
+              <span class="tr-temp" id="tr-temp1">—</span>
             </div>
-          </div>
-        </section>
-
-        <!-- ── CONTROLS PANEL ── -->
-        <section class="panel" id="panel-controls">
-          <div class="section-header">
-            <h2>Device Controls</h2>
-            <p>Send commands directly to the ESP32 via MQTT</p>
-          </div>
-          <div class="controls-grid">
-
-            <div class="card">
-              <div class="card-head"><span class="card-title">Heater Relay</span></div>
-              <div class="relay-btns">
-                <button class="relay-btn relay-on" onclick="controlRelay('ON')">
-                  <span>🔥</span><span>FORCE ON</span>
-                </button>
-                <button class="relay-btn relay-off" onclick="controlRelay('OFF')">
-                  <span>❄</span><span>FORCE OFF</span>
-                </button>
-                <button class="relay-btn relay-auto" onclick="controlRelay('AUTO')">
-                  <span>⚙</span><span>AUTO</span>
-                </button>
-              </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="s1-toggle" checked onchange="toggleSensor(1,this.checked)">
+              <span class="toggle-thumb"></span>
             </div>
-
-            <div class="card">
-              <div class="card-head"><span class="card-title">Temperature Limits</span></div>
-              <div class="slider-group">
-                <div class="slider-row">
-                  <label>Maximum <span class="slide-val accent-orange" id="maxTempDisplay">36°C</span></label>
-                  <input type="range" class="slide" id="maxTempSlider" min="25" max="45" value="36" step="1"
-                    oninput="document.getElementById('maxTempDisplay').textContent=this.value+'°C'">
-                </div>
-                <div class="slider-row">
-                  <label>Minimum <span class="slide-val accent-blue" id="minTempDisplay">32°C</span></label>
-                  <input type="range" class="slide" id="minTempSlider" min="20" max="40" value="32" step="1"
-                    oninput="document.getElementById('minTempDisplay').textContent=this.value+'°C'">
-                </div>
-                <div class="slider-row">
-                  <label>Total Days <span class="slide-val" id="totalDaysDisplay">30</span></label>
-                  <input type="range" class="slide" id="totalDaysSlider" min="1" max="90" value="30" step="1"
-                    oninput="document.getElementById('totalDaysDisplay').textContent=this.value">
-                </div>
-                <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
-              </div>
+          </label>
+          <label class="toggle-row" id="tr2">
+            <div class="tr-info">
+              <span class="tr-name">DS18B20 — Sensor 2</span>
+              <span class="tr-temp" id="tr-temp2">—</span>
             </div>
-
-            <div class="card">
-              <div class="card-head"><span class="card-title">Advanced</span></div>
-              <div class="adv-list">
-                <div class="adv-row">
-                  <span>Weekly Temp Reduction</span>
-                  <div class="tgl on" id="weeklyTgl" onclick="toggleWeekly()">
-                    <div class="tgl-knob"></div>
-                  </div>
-                </div>
-                <div class="adv-row">
-                  <span>Force Reduce Now</span>
-                  <button class="mini-btn" onclick="reduceNow()">APPLY</button>
-                </div>
-              </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="s2-toggle" checked onchange="toggleSensor(2,this.checked)">
+              <span class="toggle-thumb"></span>
             </div>
-
-          </div>
-        </section>
-
-        <!-- ── SETTINGS PANEL ── -->
-        <section class="panel" id="panel-settings">
-          <div class="section-header">
-            <h2>Connection Settings</h2>
-            <p>Configure MQTT broker and device target</p>
-          </div>
-          <div class="settings-form-card card">
-            <div class="form-grid">
-              <div class="form-field">
-                <label>MQTT Broker</label>
-                <input class="form-inp" id="cfgBroker" value="mqtt://test.mosquitto.org" />
-              </div>
-              <div class="form-field">
-                <label>Device ID</label>
-                <input class="form-inp" id="cfgDeviceId" value="BROODIINNOX-001" />
-              </div>
+          </label>
+          <label class="toggle-row" id="tr3">
+            <div class="tr-info">
+              <span class="tr-name">DS18B20 — Sensor 3</span>
+              <span class="tr-temp" id="tr-temp3">—</span>
             </div>
-            <div class="form-note">
-              Changes here update the server-side MQTT connection. The server auto-reconnects on save.
+            <div class="toggle-wrap">
+              <input type="checkbox" id="s3-toggle" checked onchange="toggleSensor(3,this.checked)">
+              <span class="toggle-thumb"></span>
             </div>
-          </div>
+          </label>
+          <label class="toggle-row" id="tr4">
+            <div class="tr-info">
+              <span class="tr-name">DS18B20 — Sensor 4</span>
+              <span class="tr-temp" id="tr-temp4">—</span>
+            </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="s4-toggle" checked onchange="toggleSensor(4,this.checked)">
+              <span class="toggle-thumb"></span>
+            </div>
+          </label>
+        </div>
+      </div>
 
-          <div class="section-header" style="margin-top:28px;">
-            <h2>API Endpoints</h2>
-            <p>REST API available from the server</p>
-          </div>
-          <div class="api-list card">
-            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/device</span><span class="api-desc">Current device data</span></div>
-            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/history</span><span class="api-desc">Historical readings (limit=N)</span></div>
-            <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/health</span><span class="api-desc">Server health check</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/relay</span><span class="api-desc">{"command":"ON|OFF|AUTO"}</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/temperature</span><span class="api-desc">{"max_temp":36,"min_temp":32}</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/total-days</span><span class="api-desc">{"total_days":30}</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/sensor</span><span class="api-desc">{"sensor":1,"state":"ON"}</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/weekly-reduce</span><span class="api-desc">{"enabled":true}</span></div>
-            <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/control/reduce-now</span><span class="api-desc">Trigger immediate reduction</span></div>
-            <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/history</span><span class="api-desc">Clear historical data</span></div>
-          </div>
-        </section>
+      <!-- ANIMAL PRESET -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-tag">ANIMAL PRESET</span>
+          <span class="panel-note">Sends preset to firmware via MQTT</span>
+        </div>
+        <div class="preset-grid">
+          <button class="preset-btn" data-animal="Chicken" onclick="sendPreset('Chicken')">
+            <span class="preset-emoji">🐔</span>
+            <span>CHICKEN</span>
+            <span class="preset-sub">30d · 36/32°C</span>
+          </button>
+          <button class="preset-btn" data-animal="Duck" onclick="sendPreset('Duck')">
+            <span class="preset-emoji">🦆</span>
+            <span>DUCK</span>
+            <span class="preset-sub">35d · 35/31°C</span>
+          </button>
+          <button class="preset-btn" data-animal="Turkey" onclick="sendPreset('Turkey')">
+            <span class="preset-emoji">🦃</span>
+            <span>TURKEY</span>
+            <span class="preset-sub">28d · 37/33°C</span>
+          </button>
+          <button class="preset-btn" data-animal="Pig" onclick="sendPreset('Pig')">
+            <span class="preset-emoji">🐷</span>
+            <span>PIG</span>
+            <span class="preset-sub">45d · 34/30°C</span>
+          </button>
+        </div>
+      </div>
 
-      </div><!-- /panels -->
+      <!-- SYSTEM INFO & FACTORY RESET -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-tag">SYSTEM</span>
+        </div>
+        <div class="sys-grid">
+          <div class="sys-item">
+            <span class="sys-label">DEVICE ID</span>
+            <span class="sys-val mono" id="sys-device-id">—</span>
+          </div>
+          <div class="sys-item">
+            <span class="sys-label">WEEKLY REDUCTION</span>
+            <span class="sys-val" id="sys-weekly">—</span>
+          </div>
+          <div class="sys-item">
+            <span class="sys-label">REDUCE EVERY</span>
+            <span class="sys-val" id="sys-reduce-deg">—</span>
+          </div>
+          <div class="sys-item">
+            <span class="sys-label">LAST REDUCTION DAY</span>
+            <span class="sys-val" id="sys-last-red">—</span>
+          </div>
+          <div class="sys-item">
+            <span class="sys-label">GSM SIGNAL</span>
+            <span class="sys-val" id="sys-signal">—</span>
+          </div>
+          <div class="sys-item">
+            <span class="sys-label">ERROR MESSAGE</span>
+            <span class="sys-val warn" id="sys-error">NONE</span>
+          </div>
+        </div>
 
-      <footer class="footer">
-        <span>Broodinnox v3.0-GSM · ESP32 + A7670G · MQTT/Socket.IO</span>
-        <span>Author: Muyirama Sezerano Liven</span>
-      </footer>
-    </main>
+        <div class="danger-zone">
+          <span class="dz-label">⚠ DANGER ZONE</span>
+          <button class="factory-btn" id="factory-btn" onclick="confirmFactoryReset()">
+            FACTORY RESET
+          </button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <span class="toast-ico" id="toast-ico">✓</span>
+  <span id="toast-msg">—</span>
+</div>
+
+<!-- ── Confirm Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-icon">⚠</div>
+    <h2 id="modal-title">Confirm Action</h2>
+    <p id="modal-body">Are you sure?</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">CANCEL</button>
+      <button class="modal-confirm" id="modal-confirm">CONFIRM</button>
+    </div>
   </div>
+</div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <span class="toast-icon" id="toastIcon">✓</span>
-    <span id="toastMsg">—</span>
-  </div>
-
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="app.js"></script>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
