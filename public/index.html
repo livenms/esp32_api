@@ -1,97 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Broodinnox Smart Brooding System</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BROODINNOX — Control Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="header">
-            <div class="title-section">
-                <h1><i class="fas fa-egg"></i> Broodinnox SMART</h1>
-                <p>GSM + MQTT Brooding Controller | Real-time Monitoring & Control</p>
-            </div>
-            <div class="status-badge">
-                <div class="badge"><i class="fas fa-plug"></i> <span id="mqttStatus">Connecting...</span></div>
-                <div class="badge"><i class="fas fa-microchip"></i> <span id="deviceStatus">--</span></div>
-                <div class="badge"><i class="fas fa-clock"></i> <span id="lastSeen">--</span></div>
-            </div>
-        </div>
 
-        <div class="grid">
-            <div class="card">
-                <div class="card-title"><i class="fas fa-temperature-high"></i> Temperature & Sensors</div>
-                <div><span class="temp-big" id="avgTemp">--</span><span class="temp-unit">°C</span></div>
-                <div class="sensor-grid" id="sensorList"></div>
-                <div id="sensorWarnings" class="warning-text"></div>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><i class="fas fa-fire-extinguisher"></i> Heating Relay</div>
-                <div class="control-group">
-                    <div class="control-label">Relay Mode</div>
-                    <div class="toggle-group">
-                        <div id="relayAutoBtn" class="toggle-btn">AUTO</div>
-                        <div id="relayOnBtn" class="toggle-btn">ON (Manual)</div>
-                        <div id="relayOffBtn" class="toggle-btn">OFF (Manual)</div>
-                    </div>
-                    <div id="relayStateDisplay" style="margin-top: 12px; font-weight: bold;">
-                        ⚡ Relay: <span id="relayStateText">--</span>
-                    </div>
-                </div>
-                <hr>
-                <div class="control-label">Animal Preset</div>
-                <select id="animalPreset">
-                    <option value="Chicken">🐔 Chicken (36/32°C, 30d)</option>
-                    <option value="Pig">🐷 Pig (34/30°C, 45d)</option>
-                    <option value="Turkey">🦃 Turkey (37/33°C, 28d)</option>
-                    <option value="Duck">🦆 Duck (35/31°C, 35d)</option>
-                </select>
-                <button id="applyPresetBtn">Apply Preset</button>
-                <button id="factoryResetBtn" class="danger-btn">⚠️ Factory Reset</button>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><i class="fas fa-sliders-h"></i> Setpoints & Schedule</div>
-                <div class="control-group">
-                    <div class="control-label">🌡️ Max Temperature: <span id="maxTempVal">--</span>°C</div>
-                    <input type="range" id="maxTempSlider" min="10" max="45" step="1">
-                </div>
-                <div class="control-group">
-                    <div class="control-label">❄️ Min Temperature: <span id="minTempVal">--</span>°C</div>
-                    <input type="range" id="minTempSlider" min="10" max="45" step="1">
-                </div>
-                <div class="control-group">
-                    <div class="control-label">📅 Total Days: <span id="totalDaysVal">--</span></div>
-                    <input type="range" id="totalDaysSlider" min="1" max="365" step="1">
-                </div>
-                <div class="control-label">📈 Current Day: <span id="currentDay">--</span> / <span id="totalDaysSpan">--</span></div>
-                <div class="control-label">♻️ Weekly reduction: <span id="weeklyReduceStatus">--</span></div>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><i class="fas fa-microchip"></i> Active Sensors</div>
-                <div id="sensorTogglePanel" style="display: flex; flex-wrap: wrap; gap: 12px;"></div>
-                <div class="control-group" style="margin-top: 16px;">
-                    <div class="control-label">Failsafe Mode: <span id="failsafeStatus">--</span></div>
-                    <div class="control-label">Signal Quality: <span id="signalQuality">--</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card chart-container">
-            <div class="card-title"><i class="fas fa-chart-line"></i> Live Temperature History</div>
-            <canvas id="tempChart" width="400" height="180"></canvas>
-        </div>
-        <div class="footer">
-            <i class="fas fa-sync-alt"></i> Real-time updates via MQTT | Connected to test.mosquitto.org
-        </div>
+<!-- ── HEADER ──────────────────────────────────────────────────────────────── -->
+<header class="hdr">
+  <div class="hdr-brand">
+    <svg class="hdr-logo" viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="18" r="17" stroke="var(--amber)" stroke-width="1.5"/>
+      <path d="M18 8 C12 8 8 13 8 18 C8 23 12 26 18 26 C24 26 28 23 28 18" stroke="var(--amber)" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="18" cy="18" r="4" fill="var(--amber)"/>
+      <path d="M18 14 L18 10" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="hdr-title">BROODINNOX</div>
+      <div class="hdr-sub">Smart Brooding Control System</div>
     </div>
-    <script src="dashboard.js"></script>
+  </div>
+
+  <div class="hdr-right">
+    <div class="hdr-stat">
+      <span class="hdr-stat-label">DEVICE</span>
+      <span class="hdr-stat-val" id="hdr-device-id">—</span>
+    </div>
+    <div class="hdr-stat">
+      <span class="hdr-stat-label">SIGNAL</span>
+      <span class="hdr-stat-val" id="hdr-signal">—</span>
+    </div>
+    <div class="status-pill" id="status-pill">
+      <span class="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN GRID ────────────────────────────────────────────────────────────── -->
+<main class="grid">
+
+  <!-- ── COL A : TELEMETRY ─────────────────────────────────────────────────── -->
+  <div class="col col-a">
+
+    <!-- BIG TEMP DISPLAY -->
+    <div class="panel panel-temp">
+      <div class="panel-label">CORE TEMPERATURE</div>
+      <div class="temp-hero">
+        <span class="temp-val" id="temp-val">—</span>
+        <span class="temp-deg">°C</span>
+        <span class="temp-badge" id="temp-badge">—</span>
+      </div>
+      <div class="temp-band">
+        <div class="band-edge" id="band-min">MIN <strong id="min-val">—</strong>°C</div>
+        <div class="band-track">
+          <div class="band-fill" id="band-fill"></div>
+          <div class="band-needle" id="band-needle"></div>
+        </div>
+        <div class="band-edge" id="band-max">MAX <strong id="max-val">—</strong>°C</div>
+      </div>
+    </div>
+
+    <!-- SENSOR GRID -->
+    <div class="panel panel-sensors">
+      <div class="panel-label">SENSOR ARRAY</div>
+      <div class="sensor-row">
+        <div class="sensor-tile" id="st1">
+          <div class="st-label">DS1</div>
+          <div class="st-val" id="sv1">—</div>
+          <div class="st-led" id="sl1"></div>
+        </div>
+        <div class="sensor-tile" id="st2">
+          <div class="st-label">DS2</div>
+          <div class="st-val" id="sv2">—</div>
+          <div class="st-led" id="sl2"></div>
+        </div>
+        <div class="sensor-tile" id="st3">
+          <div class="st-label">DS3</div>
+          <div class="st-val" id="sv3">—</div>
+          <div class="st-led" id="sl3"></div>
+        </div>
+        <div class="sensor-tile" id="st4">
+          <div class="st-label">DS4</div>
+          <div class="st-val" id="sv4">—</div>
+          <div class="st-led" id="sl4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CYCLE PROGRESS -->
+    <div class="panel panel-cycle">
+      <div class="panel-label">BROODING CYCLE</div>
+      <div class="cycle-body">
+        <div class="cycle-days">
+          <span class="cycle-current" id="day-current">0</span>
+          <span class="cycle-sep">/</span>
+          <span class="cycle-total" id="day-total">0</span>
+          <span class="cycle-unit">days</span>
+        </div>
+        <div class="cycle-bar-wrap">
+          <div class="cycle-bar" id="cycle-bar"></div>
+          <div class="cycle-pct" id="cycle-pct">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPERATURE CHART -->
+    <div class="panel panel-chart">
+      <div class="panel-header">
+        <span class="panel-label">TEMPERATURE HISTORY</span>
+        <div class="range-tabs">
+          <button class="rtab active" data-range="1h">1H</button>
+          <button class="rtab" data-range="6h">6H</button>
+          <button class="rtab" data-range="24h">24H</button>
+          <button class="rtab" data-range="all">ALL</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="tempChart"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /col-a -->
+
+  <!-- ── COL B : CONTROLS ──────────────────────────────────────────────────── -->
+  <div class="col col-b">
+
+    <!-- HEATER CONTROL -->
+    <div class="panel panel-heater">
+      <div class="panel-label">HEATER CONTROL</div>
+      <div class="heater-status-row">
+        <div class="heater-icon" id="heater-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <path d="M20 6 C20 6 14 14 14 20 C14 26 16 30 20 34 C24 30 26 26 26 20 C26 14 20 6 20 6Z" fill="var(--flame-fill)" stroke="var(--flame-stroke)" stroke-width="1.5"/>
+            <path d="M20 18 C20 18 17 22 17 24 C17 26.2 18.3 28 20 28 C21.7 28 23 26.2 23 24 C23 22 20 18 20 18Z" fill="var(--flame-core)"/>
+          </svg>
+        </div>
+        <div>
+          <div class="heater-state" id="heater-state">—</div>
+          <div class="heater-mode" id="heater-mode">—</div>
+        </div>
+      </div>
+      <div class="heater-btns">
+        <button class="hbtn hbtn-on"   onclick="sendRelay('ON')">HEATER ON</button>
+        <button class="hbtn hbtn-off"  onclick="sendRelay('OFF')">HEATER OFF</button>
+        <button class="hbtn hbtn-auto" onclick="sendRelay('AUTO')">AUTO</button>
+      </div>
+    </div>
+
+    <!-- TEMPERATURE SETTINGS -->
+    <div class="panel panel-settings">
+      <div class="panel-label">TEMPERATURE SETTINGS</div>
+
+      <div class="setting-row">
+        <div class="sr-labels">
+          <span>Max Temp</span>
+          <span class="sr-cur" id="max-temp-disp">36°C</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" class="slider" id="sl-max" min="25" max="50" value="36" step="1"
+                 oninput="document.getElementById('max-temp-disp').textContent=this.value+'°C'"/>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="sr-labels">
+          <span>Min Temp</span>
+          <span class="sr-cur" id="min-temp-disp">32°C</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" class="slider" id="sl-min" min="10" max="45" value="32" step="1"
+                 oninput="document.getElementById('min-temp-disp').textContent=this.value+'°C'"/>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="sr-labels">
+          <span>Cycle Days</span>
+          <span class="sr-cur" id="days-disp">30 days</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" class="slider" id="sl-days" min="1" max="120" value="30" step="1"
+                 oninput="document.getElementById('days-disp').textContent=this.value+' days'"/>
+        </div>
+      </div>
+
+      <button class="apply-btn" onclick="applySettings()">APPLY SETTINGS</button>
+    </div>
+
+    <!-- SENSOR MANAGEMENT -->
+    <div class="panel panel-sensorctl">
+      <div class="panel-label">SENSOR MANAGEMENT</div>
+      <div class="sensor-ctl-grid">
+        <label class="sctl" id="sctl1">
+          <div class="sctl-name">DS1</div>
+          <div class="sctl-temp" id="sctl-t1">—</div>
+          <div class="sctl-toggle">
+            <input type="checkbox" id="s1chk" checked onchange="toggleSensor(1,this.checked)"/>
+            <span class="tog-track"><span class="tog-thumb"></span></span>
+          </div>
+        </label>
+        <label class="sctl" id="sctl2">
+          <div class="sctl-name">DS2</div>
+          <div class="sctl-temp" id="sctl-t2">—</div>
+          <div class="sctl-toggle">
+            <input type="checkbox" id="s2chk" checked onchange="toggleSensor(2,this.checked)"/>
+            <span class="tog-track"><span class="tog-thumb"></span></span>
+          </div>
+        </label>
+        <label class="sctl" id="sctl3">
+          <div class="sctl-name">DS3</div>
+          <div class="sctl-temp" id="sctl-t3">—</div>
+          <div class="sctl-toggle">
+            <input type="checkbox" id="s3chk" checked onchange="toggleSensor(3,this.checked)"/>
+            <span class="tog-track"><span class="tog-thumb"></span></span>
+          </div>
+        </label>
+        <label class="sctl" id="sctl4">
+          <div class="sctl-name">DS4</div>
+          <div class="sctl-temp" id="sctl-t4">—</div>
+          <div class="sctl-toggle">
+            <input type="checkbox" id="s4chk" checked onchange="toggleSensor(4,this.checked)"/>
+            <span class="tog-track"><span class="tog-thumb"></span></span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- ANIMAL PRESET -->
+    <div class="panel panel-preset">
+      <div class="panel-label">ANIMAL PRESET</div>
+      <div class="preset-grid">
+        <button class="preset-btn" data-animal="Chicken" onclick="sendPreset('Chicken')">
+          <span class="preset-icon">🐔</span>Chicken
+        </button>
+        <button class="preset-btn" data-animal="Pig" onclick="sendPreset('Pig')">
+          <span class="preset-icon">🐷</span>Pig
+        </button>
+        <button class="preset-btn" data-animal="Turkey" onclick="sendPreset('Turkey')">
+          <span class="preset-icon">🦃</span>Turkey
+        </button>
+        <button class="preset-btn" data-animal="Duck" onclick="sendPreset('Duck')">
+          <span class="preset-icon">🦆</span>Duck
+        </button>
+      </div>
+    </div>
+
+    <!-- SYSTEM INFO & DANGER ZONE -->
+    <div class="panel panel-sysinfo">
+      <div class="panel-label">SYSTEM INFO</div>
+      <div class="info-grid">
+        <div class="info-kv"><span>Last seen</span><span id="info-lastseen">—</span></div>
+        <div class="info-kv"><span>Error status</span><span id="info-error">OK</span></div>
+        <div class="info-kv"><span>Failsafe</span><span id="info-failsafe">OFF</span></div>
+        <div class="info-kv"><span>Weekly reduce</span><span id="info-weekly">ON</span></div>
+        <div class="info-kv"><span>Reduce deg/wk</span><span id="info-reducedeg">3°C</span></div>
+        <div class="info-kv"><span>Last reduction</span><span id="info-lastred">Day —</span></div>
+      </div>
+    </div>
+
+    <!-- DANGER -->
+    <div class="panel panel-danger">
+      <div class="panel-label danger-label">DANGER ZONE</div>
+      <button class="danger-btn" onclick="confirmFactoryReset()">FACTORY RESET DEVICE</button>
+    </div>
+
+  </div><!-- /col-b -->
+
+</main>
+
+<!-- ── TOAST ─────────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<!-- ── CONFIRM MODAL ──────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Confirm Factory Reset</div>
+    <div class="modal-body">This will reset all settings on the device and restart it. This cannot be undone.</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="doFactoryReset()">RESET</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
