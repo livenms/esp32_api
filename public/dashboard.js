@@ -1,447 +1,203 @@
-// Dashboard-specific functionality
+const socket = io();
+let chartInstance = null;
+let tempHistory = [];
 
-// Dashboard initialization
-class Dashboard {
-    constructor() {
-        this.initialized = false;
-        this.metrics = {
-            performance: 0,
-            memory: 0,
-            cpu: 0,
-            requests: 0
-        };
-    }
-
-    // Initialize dashboard
-    init() {
-        if (this.initialized) return;
-        
-        console.log('📈 Initializing dashboard analytics...');
-        
-        // Set up real-time updates
-        this.setupRealTimeUpdates();
-        
-        // Start metrics collection
-        this.startMetricsCollection();
-        
-        // Set up chart if needed
-        this.setupCharts();
-        
-        this.initialized = true;
-        console.log('✅ Dashboard analytics initialized');
-    }
-
-    // Set up real-time updates
-    setupRealTimeUpdates() {
-        // Simulate real-time data updates
-        setInterval(() => {
-            this.updateMetrics();
-            this.updateLiveStats();
-        }, 5000); // Update every 5 seconds
-    }
-
-    // Start collecting metrics
-    startMetricsCollection() {
-        console.log('📊 Starting metrics collection...');
-        
-        // Initial metrics
-        this.updateMetrics();
-        
-        // Update every minute
-        setInterval(() => {
-            this.updateMetrics();
-        }, 60000);
-    }
-
-    // Update metrics
-    updateMetrics() {
-        // Simulate metrics data
-        this.metrics = {
-            performance: 85 + Math.random() * 15,
-            memory: 45 + Math.random() * 30,
-            cpu: 20 + Math.random() * 40,
-            requests: 120 + Math.floor(Math.random() * 100)
-        };
-        
-        console.log('📈 Metrics updated:', this.metrics);
-    }
-
-    // Update live stats display
-    updateLiveStats() {
-        // Update any live stat elements if they exist
-        const liveStatsElement = document.getElementById('liveStats');
-        if (liveStatsElement) {
-            liveStatsElement.innerHTML = `
-                <div class="live-stat">
-                    <span class="stat-label">Performance:</span>
-                    <span class="stat-value">${this.metrics.performance.toFixed(1)}%</span>
-                </div>
-                <div class="live-stat">
-                    <span class="stat-label">Memory Usage:</span>
-                    <span class="stat-value">${this.metrics.memory.toFixed(1)}%</span>
-                </div>
-                <div class="live-stat">
-                    <span class="stat-label">CPU Load:</span>
-                    <span class="stat-value">${this.metrics.cpu.toFixed(1)}%</span>
-                </div>
-                <div class="live-stat">
-                    <span class="stat-label">Requests/min:</span>
-                    <span class="stat-value">${this.metrics.requests}</span>
-                </div>
-            `;
-        }
-    }
-
-    // Set up charts (placeholder for chart library integration)
-    setupCharts() {
-        console.log('📊 Setting up dashboard charts...');
-        
-        // This would integrate with a charting library like Chart.js
-        // For now, we'll just log that charts would be initialized
-        
-        // Check if Chart.js is available
-        if (typeof Chart !== 'undefined') {
-            this.initializeRealChart();
-        } else {
-            console.log('ℹ️ Chart.js not loaded. Skipping chart initialization.');
-        }
-    }
-
-    // Initialize a real chart if Chart.js is available
-    initializeRealChart() {
-        try {
-            const ctx = document.getElementById('performanceChart');
-            if (!ctx) return;
-            
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Performance',
-                        data: [65, 78, 85, 82, 88, 92],
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: true
-                        }
-                    }
+// Initialize chart
+function initChart() {
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 20}, (_, i) => i + 1),
+            datasets: [{
+                label: 'Average Temperature (°C)',
+                data: [],
+                borderColor: '#f9b43a',
+                backgroundColor: 'rgba(249, 180, 58, 0.1)',
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#ffd966'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { labels: { color: '#ddd' } }
+            },
+            scales: {
+                y: {
+                    grid: { color: '#2e4a42' },
+                    title: { display: true, text: '°C', color: '#ccc' }
                 }
-            });
-            
-            console.log('✅ Performance chart initialized');
-        } catch (error) {
-            console.error('Error initializing chart:', error);
+            }
         }
+    });
+}
+
+// Update UI with device data
+function updateUI(data) {
+    // Temperature display
+    const avgTemp = data.ave_temp !== null && !isNaN(data.ave_temp) ? data.ave_temp.toFixed(1) : '--';
+    document.getElementById('avgTemp').innerHTML = avgTemp;
+    
+    // Setpoints
+    document.getElementById('maxTempVal').innerText = data.max_temp;
+    document.getElementById('minTempVal').innerText = data.min_temp;
+    document.getElementById('totalDaysVal').innerText = data.total_days;
+    document.getElementById('currentDay').innerText = data.day;
+    document.getElementById('totalDaysSpan').innerText = data.total_days;
+    
+    // Sliders
+    document.getElementById('maxTempSlider').value = data.max_temp;
+    document.getElementById('minTempSlider').value = data.min_temp;
+    document.getElementById('totalDaysSlider').value = data.total_days;
+    
+    // Relay state
+    const relayText = data.relay_state ? '🔥 ON (Heating)' : '❄️ OFF';
+    document.getElementById('relayStateText').innerHTML = relayText;
+    
+    // Mode buttons
+    const autoBtn = document.getElementById('relayAutoBtn');
+    const onBtn = document.getElementById('relayOnBtn');
+    const offBtn = document.getElementById('relayOffBtn');
+    
+    if (!data.manual_control) {
+        autoBtn.classList.add('toggle-active');
+        onBtn.classList.remove('toggle-active');
+        offBtn.classList.remove('toggle-active');
+    } else {
+        autoBtn.classList.remove('toggle-active');
+        if (data.relay_state) onBtn.classList.add('toggle-active');
+        else offBtn.classList.add('toggle-active');
     }
-
-    // Export dashboard data
-    exportDashboardData() {
-        const data = {
-            timestamp: new Date().toISOString(),
-            metrics: this.metrics,
-            files: window.dashboardUtils ? 'Available' : 'Not loaded',
-            status: 'active'
-        };
-        
-        // Create downloadable JSON
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-            type: 'application/json'
-        });
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dashboard-export-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('📥 Dashboard data exported');
+    
+    // Status indicators
+    document.getElementById('failsafeStatus').innerHTML = data.failsafe_mode ? '⚠️ ACTIVE' : 'Normal';
+    document.getElementById('signalQuality').innerHTML = data.signal_quality || '0';
+    document.getElementById('weeklyReduceStatus').innerHTML = data.weekly_reduce_enabled ? '✅ Enabled' : 'Disabled';
+    document.getElementById('deviceStatus').innerHTML = data.relay_state ? 'HEATING' : 'IDLE';
+    
+    // Sensors grid
+    const sensors = [
+        {label: 'DS1', temp: data.sensor1, enabled: data.s1_enabled},
+        {label: 'DS2', temp: data.sensor2, enabled: data.s2_enabled},
+        {label: 'DS3', temp: data.sensor3, enabled: data.s3_enabled},
+        {label: 'DS4', temp: data.sensor4, enabled: data.s4_enabled}
+    ];
+    
+    const sensorsHtml = sensors.map(s => {
+        const val = (s.temp !== null && !isNaN(s.temp)) ? s.temp.toFixed(1) + '°C' : (s.enabled ? 'ERR' : 'Disabled');
+        return `<div class="sensor-chip">
+                    <div class="sensor-label">${s.label}</div>
+                    <div class="sensor-value" style="color:${s.enabled ? '#ffd966' : '#7f8c8d'}">${val}</div>
+                </div>`;
+    }).join('');
+    document.getElementById('sensorList').innerHTML = sensorsHtml;
+    
+    // Warnings
+    let warnings = [];
+    if (data.sensor_error) warnings.push('⚠️ Sensor failure detected');
+    if (data.mismatch_error) warnings.push('⚠️ Temperature mismatch between sensors');
+    if (data.failsafe_mode) warnings.push('🔥 FAILSAFE ACTIVE: Heater forced ON');
+    document.getElementById('sensorWarnings').innerHTML = warnings.join(' | ') || 'All sensors nominal';
+    
+    // Sensor toggle panel
+    const togglePanel = document.getElementById('sensorTogglePanel');
+    const sensorsToggle = [
+        {id: 'DS1', enabled: data.s1_enabled, idx: 1},
+        {id: 'DS2', enabled: data.s2_enabled, idx: 2},
+        {id: 'DS3', enabled: data.s3_enabled, idx: 3},
+        {id: 'DS4', enabled: data.s4_enabled, idx: 4}
+    ];
+    
+    togglePanel.innerHTML = sensorsToggle.map(s => {
+        return `<div class="toggle-btn ${s.enabled ? 'toggle-active' : ''}" onclick="toggleSensor('${s.id}', ${!s.enabled})">
+                    ${s.id} ${s.enabled ? 'ON' : 'OFF'}
+                </div>`;
+    }).join('');
+    
+    // Last seen
+    if (data.timestamp) {
+        const d = new Date(data.timestamp * 1000);
+        document.getElementById('lastSeen').innerHTML = d.toLocaleTimeString();
     }
-
-    // Generate report
-    generateReport() {
-        console.log('📋 Generating dashboard report...');
-        
-        const report = `
-Dashboard Analytics Report
-==========================
-Generated: ${new Date().toLocaleString()}
-
-Performance Metrics:
-• Performance: ${this.metrics.performance.toFixed(1)}%
-• Memory Usage: ${this.metrics.memory.toFixed(1)}%
-• CPU Load: ${this.metrics.cpu.toFixed(1)}%
-• Requests/min: ${this.metrics.requests}
-
-System Status:
-• Server: Online
-• Database: Connected
-• API: Responding
-• Uptime: 99.9%
-
-Recommendations:
-${this.getRecommendations()}
-        `;
-        
-        // Show report in a modal or new window
-        const reportWindow = window.open('', 'Dashboard Report', 'width=600,height=400');
-        if (reportWindow) {
-            reportWindow.document.write(`
-                <html>
-                <head>
-                    <title>Dashboard Report</title>
-                    <style>
-                        body { 
-                            font-family: monospace; 
-                            padding: 20px; 
-                            line-height: 1.6;
-                            background: #f7fafc;
-                            color: #2d3748;
-                        }
-                        pre {
-                            background: white;
-                            padding: 20px;
-                            border-radius: 10px;
-                            border: 1px solid #e2e8f0;
-                            white-space: pre-wrap;
-                            word-wrap: break-word;
-                        }
-                        h1 { 
-                            color: #667eea; 
-                            border-bottom: 2px solid #667eea;
-                            padding-bottom: 10px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>📊 Dashboard Analytics Report</h1>
-                    <pre>${report}</pre>
-                    <button onclick="window.print()" style="
-                        background: #667eea;
-                        color: white;
-                        border: none;
-                        padding: 10px 20px;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        margin-top: 20px;
-                    ">
-                        Print Report
-                    </button>
-                </body>
-                </html>
-            `);
-        }
-    }
-
-    // Get recommendations based on metrics
-    getRecommendations() {
-        const recommendations = [];
-        
-        if (this.metrics.performance < 80) {
-            recommendations.push('• Consider optimizing database queries');
-        }
-        
-        if (this.metrics.memory > 70) {
-            recommendations.push('• Memory usage is high. Consider adding more RAM or optimizing memory usage');
-        }
-        
-        if (this.metrics.cpu > 60) {
-            recommendations.push('• CPU usage is elevated. Consider load balancing or optimizing code');
-        }
-        
-        if (recommendations.length === 0) {
-            recommendations.push('• System is performing optimally. No actions required at this time.');
-        }
-        
-        return recommendations.join('\n');
-    }
-
-    // Reset dashboard
-    reset() {
-        console.log('🔄 Resetting dashboard...');
-        this.metrics = {
-            performance: 0,
-            memory: 0,
-            cpu: 0,
-            requests: 0
-        };
-        
-        // Show reset notification
-        if (window.dashboardUtils && window.dashboardUtils.showNotification) {
-            window.dashboardUtils.showNotification('Dashboard reset complete');
+    
+    // Update chart
+    if (data.ave_temp !== null && !isNaN(data.ave_temp)) {
+        tempHistory.push(data.ave_temp);
+        if (tempHistory.length > 20) tempHistory.shift();
+        if (chartInstance) {
+            chartInstance.data.datasets[0].data = [...tempHistory];
+            chartInstance.update();
         }
     }
 }
 
-// Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📈 Loading dashboard module...');
-    
-    // Create global dashboard instance
-    window.dashboard = new Dashboard();
-    
-    // Initialize after a short delay to ensure other scripts are loaded
-    setTimeout(() => {
-        window.dashboard.init();
-        
-        // Add dashboard controls to the page if they don't exist
-        addDashboardControls();
-        
-    }, 1000);
+// Control functions
+function sendControl(command, value) {
+    fetch(`/api/control/${command}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value })
+    }).catch(err => console.error('Control error:', err));
+}
+
+function toggleSensor(sensorId, enable) {
+    const cmd = `${sensorId}:${enable ? 'ON' : 'OFF'}`;
+    sendControl('sensor', cmd);
+}
+
+// Socket events
+socket.on('connect', () => {
+    console.log('Connected to server');
+    document.getElementById('mqttStatus').innerHTML = '🟢 Online';
+    document.getElementById('mqttStatus').style.color = '#2ecc71';
 });
 
-// Add dashboard controls to the page
-function addDashboardControls() {
-    // Check if controls already exist
-    if (document.getElementById('dashboardControls')) return;
-    
-    // Create controls container
-    const controls = document.createElement('div');
-    controls.id = 'dashboardControls';
-    controls.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        background: white;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        z-index: 1000;
-        display: flex;
-        gap: 10px;
-    `;
-    
-    // Add buttons
-    const exportBtn = document.createElement('button');
-    exportBtn.textContent = '📥 Export Data';
-    exportBtn.style.cssText = `
-        background: #48bb78;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-    `;
-    exportBtn.onclick = () => window.dashboard.exportDashboardData();
-    
-    const reportBtn = document.createElement('button');
-    reportBtn.textContent = '📋 Generate Report';
-    reportBtn.style.cssText = `
-        background: #667eea;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-    `;
-    reportBtn.onclick = () => window.dashboard.generateReport();
-    
-    const resetBtn = document.createElement('button');
-    resetBtn.textContent = '🔄 Reset';
-    resetBtn.style.cssText = `
-        background: #ed8936;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-    `;
-    resetBtn.onclick = () => window.dashboard.reset();
-    
-    controls.appendChild(exportBtn);
-    controls.appendChild(reportBtn);
-    controls.appendChild(resetBtn);
-    
-    document.body.appendChild(controls);
-    
-    console.log('✅ Dashboard controls added');
-}
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+    document.getElementById('mqttStatus').innerHTML = '🔴 Offline';
+    document.getElementById('mqttStatus').style.color = '#e74c3c';
+});
 
-// Dashboard API integration
-const DashboardAPI = {
-    // Get real-time metrics from server
-    async getRealTimeMetrics() {
-        try {
-            const response = await fetch('/api/dashboard');
-            if (!response.ok) throw new Error('API request failed');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching real-time metrics:', error);
-            return null;
-        }
-    },
-    
-    // Subscribe to live updates
-    subscribeToUpdates(callback) {
-        // Simulate WebSocket connection
-        setInterval(async () => {
-            const data = await this.getRealTimeMetrics();
-            if (data && callback) {
-                callback(data);
-            }
-        }, 10000); // Update every 10 seconds
+socket.on('device_update', (data) => {
+    updateUI(data);
+});
+
+// Event listeners
+document.getElementById('relayAutoBtn').onclick = () => sendControl('relay', 'AUTO');
+document.getElementById('relayOnBtn').onclick = () => sendControl('relay', 'ON');
+document.getElementById('relayOffBtn').onclick = () => sendControl('relay', 'OFF');
+
+document.getElementById('maxTempSlider').oninput = (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('maxTempVal').innerText = val;
+    sendControl('max_temp', val);
+};
+
+document.getElementById('minTempSlider').oninput = (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('minTempVal').innerText = val;
+    sendControl('min_temp', val);
+};
+
+document.getElementById('totalDaysSlider').oninput = (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('totalDaysVal').innerText = val;
+    sendControl('total_days', val);
+};
+
+document.getElementById('applyPresetBtn').onclick = () => {
+    const animal = document.getElementById('animalPreset').value;
+    sendControl('animal', animal);
+};
+
+document.getElementById('factoryResetBtn').onclick = () => {
+    if (confirm('⚠️ FACTORY RESET will restore defaults and reboot device. Continue?')) {
+        sendControl('factory_reset', 'RESET');
     }
 };
 
-// Make API available globally
-window.DashboardAPI = DashboardAPI;
-
-// Performance monitoring
-class PerformanceMonitor {
-    constructor() {
-        this.metrics = [];
-        this.startTime = Date.now();
-    }
-    
-    startMeasurement(name) {
-        return {
-            name,
-            start: Date.now(),
-            end: null,
-            duration: null
-        };
-    }
-    
-    endMeasurement(measurement) {
-        measurement.end = Date.now();
-        measurement.duration = measurement.end - measurement.start;
-        this.metrics.push(measurement);
-        
-        // Log if duration is significant
-        if (measurement.duration > 100) {
-            console.warn(`⚠️ Slow operation detected: ${measurement.name} took ${measurement.duration}ms`);
-        }
-        
-        return measurement.duration;
-    }
-    
-    getPerformanceReport() {
-        const totalTime = Date.now() - this.startTime;
-        const avgDuration = this.metrics.reduce((sum, m) => sum + m.duration, 0) / this.metrics.length;
-        
-        return {
-            totalOperations: this.metrics.length,
-            totalTime,
-            averageDuration: avgDuration,
-            slowOperations: this.metrics.filter(m => m.duration > 100),
-            metrics: this.metrics
-        };
-    }
-}
-
-// Initialize performance monitor
-window.performanceMonitor = new PerformanceMonitor();
-
-console.log('✅ Dashboard.js module loaded successfully');
+// Initialize
+initChart();
