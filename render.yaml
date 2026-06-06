@@ -3,13 +3,10 @@ services:
     name: broodinnox-dashboard
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
-      - key: MQTT_BROKER
-        value: test.mosquitto.org
-      - key: MQTT_PORT
-        value: 1883
-      - key: DEVICE_ID
-        value: BROODIINNOX-001
-      - key: PORT
-        value: 3000
+      - key: NODE_VERSION
+        value: 18.17.0
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
