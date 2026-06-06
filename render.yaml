@@ -5,8 +5,14 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: NODE_VERSION
-        value: 18.17.0
-    plan: free
-    healthCheckPath: /
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MQTT_BROKER
+        value: mqtt://broker.hivemq.com
+      - key: DEVICE_ID
+        value: BROODIINNOX-001
+    healthCheckPath: /api/health
     autoDeploy: true
+    plan: free
