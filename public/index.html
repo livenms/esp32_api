@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Broodinnox Smart Brooding System - Live Monitoring Dashboard"/>
   <title>Broodinnox Dashboard</title>
 
   <link rel="stylesheet" href="style.css"/>
@@ -11,22 +12,32 @@
 
 <body>
   <div class="app">
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <h2>Broodinnox</h2>
       <p class="sub">Smart Brooding System</p>
 
+      <!-- CONNECTION STATUS -->
       <div class="status-box">
-        <p>MQTT: <span id="mqttStatus">Disconnected</span></p>
-        <p>Device: <span id="deviceId">-</span></p>
+        <p>
+          <span>MQTT Status</span>
+          <span id="mqttStatus">Disconnected</span>
+        </p>
+        <p>
+          <span>Device ID</span>
+          <span id="deviceId">-</span>
+        </p>
       </div>
 
+      <!-- NAVIGATION -->
       <nav>
-        <button onclick="showPage('dashboard')">Dashboard</button>
-        <button onclick="showPage('sensors')">Sensors</button>
-        <button onclick="showPage('control')">Control</button>
+        <button onclick="showPage('dashboard')">📊 Dashboard</button>
+        <button onclick="showPage('sensors')">📡 Sensors</button>
+        <button onclick="showPage('control')">⚙️ Control</button>
       </nav>
     </aside>
 
+    <!-- MAIN CONTENT -->
     <main class="main">
       <header>
         <h1>Live Monitoring</h1>
