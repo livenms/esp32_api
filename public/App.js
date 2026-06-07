@@ -163,6 +163,9 @@ function render(d) {
   setText('info-reducedeg', (d.weekly_reduce_deg || 3) + '°C / week');
   setText('info-lastred',  d.last_reduction_day ? `Day ${d.last_reduction_day}` : '—');
 
+  // ── Subscription state ────────────────────────────────────────────────────
+  renderSubscription(d.device_active);
+
   // ── Chart: push new point ─────────────────────────────────────────────────
   if (temp !== null && d.timestamp) {
     const ts = d.timestamp * 1000;
@@ -357,6 +360,39 @@ async function doFactoryReset() {
     await api('/api/control/factory-reset');
     toast('Factory reset sent — device will restart', 'warn');
   } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Subscription ──────────────────────────────────────────────────────────────
+function renderSubscription(active) {
+  const ind  = document.getElementById('sub-indicator');
+  const text = document.getElementById('sub-state-text');
+  if (active === true) {
+    ind.className  = 'sub-indicator active';
+    text.textContent = 'ACTIVE';
+  } else if (active === false) {
+    ind.className  = 'sub-indicator locked';
+    text.textContent = 'LOCKED';
+  } else {
+    ind.className  = 'sub-indicator';
+    text.textContent = '—';
+  }
+}
+
+let subConfirmTimer = null;
+function setSubscription(command) {
+  // Require double-click for DEACTIVATE as a safety measure
+  if (command === 'DEACTIVATE') {
+    if (!subConfirmTimer) {
+      toast('Click DEACTIVATE again to confirm', 'warn');
+      subConfirmTimer = setTimeout(() => { subConfirmTimer = null; }, 4000);
+      return;
+    }
+    clearTimeout(subConfirmTimer);
+    subConfirmTimer = null;
+  }
+  api('/api/control/subscription', { command })
+    .then(() => toast(command === 'ACTIVATE' ? 'Activation sent to device' : 'Deactivation sent — 24h grace starts'))
+    .catch(e => toast(e.message, 'error'));
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
