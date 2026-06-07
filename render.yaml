@@ -2,12 +2,6 @@ services:
   - type: web
     name: broodinnox-dashboard
     env: node
+    plan: free
     buildCommand: npm install
-    startCommand: node server.js
-    envVars:
-      - key: NODE_VERSION
-        value: 18.17.0
-      - key: PORT
-        value: 3000
-      - key: MQTT_BROKER
-        value: mqtt://test.mosquitto.org
+    startCommand: npm start
