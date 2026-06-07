@@ -30,7 +30,8 @@ let deviceData = {
   failsafe_mode: false, sensor_error: false, mismatch_error: false,
   s1_enabled: true, s2_enabled: true, s3_enabled: true, s4_enabled: true,
   weekly_reduce_enabled: true, weekly_reduce_deg: 3, last_reduction_day: 0,
-  signal_quality: 0, error: '', status: 'offline', lastSeen: null, timestamp: null
+  signal_quality: 0, error: '', status: 'offline', lastSeen: null, timestamp: null,
+  device_active: true   // subscription state — true = active, false = locked
 };
 
 const MAX_HISTORY = 2000;
@@ -45,7 +46,8 @@ const T = {
   ctrl_total_days: `broodinnox/${DEVICE_ID}/control/total_days`,
   ctrl_sensor:     `broodinnox/${DEVICE_ID}/control/sensor`,
   ctrl_factory:    `broodinnox/${DEVICE_ID}/control/factory_reset`,
-  ctrl_preset:     `broodinnox/${DEVICE_ID}/control/animal_preset`,
+  ctrl_preset:        `broodinnox/${DEVICE_ID}/control/animal_preset`,
+  ctrl_subscription:  `broodinnox/${DEVICE_ID}/control/subscription`,
 };
 
 const mqttClient = mqtt.connect(MQTT_BROKER, {
@@ -141,6 +143,16 @@ app.post('/api/control/preset', (req, res) => {
 app.post('/api/control/factory-reset', (_req, res) => {
   mqttClient.publish(T.ctrl_factory, 'RESET');
   res.json({ ok: true });
+});
+
+// Subscription activation / deactivation
+// body: { command: "ACTIVATE" | "DEACTIVATE" }
+app.post('/api/control/subscription', (req, res) => {
+  const { command } = req.body;
+  if (!['ACTIVATE', 'DEACTIVATE'].includes(command))
+    return res.status(400).json({ error: 'command must be ACTIVATE or DEACTIVATE' });
+  mqttClient.publish(T.ctrl_subscription, command);
+  res.json({ ok: true, command });
 });
 
 app.delete('/api/history', (_req, res) => { history = []; res.json({ ok: true }); });
