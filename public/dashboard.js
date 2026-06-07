@@ -1,76 +1,88 @@
 function renderDashboard() {
-  const d = window.latestData;
+  const d = window.latestData || {};
 
   const el = document.getElementById("content");
   if (!el) return;
 
   el.innerHTML = `
     <div class="card">
-      <h3>System Status</h3>
+      <h3>🧠 System Overview</h3>
       <p>Day: <b>${d.day ?? "-"}/${d.total_days ?? "-"}</b></p>
+      <p>Avg Temp: <span class="value">${d.ave_temp ?? "--"} °C</span></p>
       <p>Relay: <b>${d.relay_state ? "ON" : "OFF"}</b></p>
       <p>Mode: <b>${d.manual_control ? "MANUAL" : "AUTO"}</b></p>
-      <p>Locked: <b>${d.device_locked ? "YES" : "NO"}</b></p>
+      <p>Lock: <b>${d.device_locked ? "LOCKED" : "ACTIVE"}</b></p>
     </div>
 
+    <!-- 🔥 RELAY CONTROL -->
     <div class="card">
-      <h3>Temperature</h3>
-      <p>Avg: <span class="value">${d.ave_temp ?? "--"}°C</span></p>
-    </div>
-
-    <div class="card">
-      <h3>Live Sensors</h3>
-      <p>S1: ${d.sensor1 ?? "--"}°C</p>
-      <p>S2: ${d.sensor2 ?? "--"}°C</p>
-      <p>S3: ${d.sensor3 ?? "--"}°C</p>
-      <p>S4: ${d.sensor4 ?? "--"}°C</p>
-    </div>
-
-    <!-- 🔥 CONTROL PANEL -->
-    <div class="card">
-      <h3>Manual Control</h3>
-
-      <button onclick="setRelay('ON')">Relay ON</button>
-      <button onclick="setRelay('OFF')">Relay OFF</button>
+      <h3>⚡ Heater Control</h3>
+      <button onclick="setRelay('ON')">Turn ON</button>
+      <button onclick="setRelay('OFF')">Turn OFF</button>
       <button onclick="setRelay('AUTO')">AUTO MODE</button>
+    </div>
 
-      <hr/>
+    <!-- 🌡 TEMPERATURE CONTROL -->
+    <div class="card">
+      <h3>🌡 Temperature Settings</h3>
 
-      <button onclick="lockDevice()" style="background:red;color:white">
+      <div>
+        <input id="maxT" type="number" placeholder="Max Temp"/>
+        <button onclick="setMaxTemp()">Apply Max</button>
+      </div>
+
+      <div>
+        <input id="minT" type="number" placeholder="Min Temp"/>
+        <button onclick="setMinTemp()">Apply Min</button>
+      </div>
+
+      <p>Current: ${d.max_temp ?? "-"}°C / ${d.min_temp ?? "-"}°C</p>
+    </div>
+
+    <!-- 🐣 SENSOR CONTROL -->
+    <div class="card">
+      <h3>📡 Sensor Control</h3>
+
+      <button onclick="toggleSensor('DS1')">Toggle DS1</button>
+      <button onclick="toggleSensor('DS2')">Toggle DS2</button>
+      <button onclick="toggleSensor('DS3')">Toggle DS3</button>
+      <button onclick="toggleSensor('DS4')">Toggle DS4</button>
+
+      <p>Sensors: 
+        DS1:${d.s1_enabled ? "ON" : "OFF"} |
+        DS2:${d.s2_enabled ? "ON" : "OFF"} |
+        DS3:${d.s3_enabled ? "ON" : "OFF"} |
+        DS4:${d.s4_enabled ? "ON" : "OFF"}
+      </p>
+    </div>
+
+    <!-- 🔐 DEVICE CONTROL -->
+    <div class="card">
+      <h3>🔐 Device Control</h3>
+
+      <button onclick="lockDevice()" style="background:#c0392b">
         LOCK DEVICE
       </button>
 
-      <button onclick="unlockDevice()" style="background:green;color:white">
+      <button onclick="unlockDevice()" style="background:#27ae60">
         UNLOCK DEVICE
       </button>
     </div>
 
+    <!-- 📊 RAW DATA -->
     <div class="card">
-      <h3>Temperature Control</h3>
-
-      <input id="maxT" type="number" placeholder="Max Temp"/>
-      <button onclick="setMaxTemp(document.getElementById('maxT').value)">
-        Set Max
-      </button>
-
-      <br/><br/>
-
-      <input id="minT" type="number" placeholder="Min Temp"/>
-      <button onclick="setMinTemp(document.getElementById('minT').value)">
-        Set Min
-      </button>
+      <h3>📊 Raw Data</h3>
+      <pre>${JSON.stringify(d, null, 2)}</pre>
     </div>
   `;
 }
 
 function showPage(page) {
   if (page === "dashboard") renderDashboard();
-
   if (page === "sensors") {
     document.getElementById("content").innerHTML =
       `<pre>${JSON.stringify(window.latestData, null, 2)}</pre>`;
   }
-
   if (page === "control") renderDashboard();
 }
 
