@@ -1,16 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Broodinnox Smart Brooding System</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Broodinnox Dashboard</title>
+
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
+
 <body>
-    <div id="app"></div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+  <div class="app">
+    <aside class="sidebar">
+      <h2>Broodinnox</h2>
+      <p class="sub">Smart Brooding System</p>
+
+      <div class="status-box">
+        <p>MQTT: <span id="mqttStatus">Disconnected</span></p>
+        <p>Device: <span id="deviceId">-</span></p>
+      </div>
+
+      <nav>
+        <button onclick="showPage('dashboard')">Dashboard</button>
+        <button onclick="showPage('sensors')">Sensors</button>
+        <button onclick="showPage('control')">Control</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header>
+        <h1>Live Monitoring</h1>
+      </header>
+
+      <section id="content"></section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="App.js"></script>
 </body>
 </html>
