@@ -264,6 +264,22 @@
       </div>
     </div>
 
+    <!-- SUBSCRIPTION CONTROL -->
+    <div class="panel panel-subscription">
+      <div class="panel-label sub-label">SUBSCRIPTION CONTROL</div>
+      <div class="sub-status-row">
+        <div class="sub-indicator" id="sub-indicator">
+          <span class="sub-dot" id="sub-dot"></span>
+          <span class="sub-state-text" id="sub-state-text">—</span>
+        </div>
+      </div>
+      <div class="sub-btns">
+        <button class="sub-btn sub-activate"   onclick="setSubscription('ACTIVATE')">ACTIVATE DEVICE</button>
+        <button class="sub-btn sub-deactivate" onclick="setSubscription('DEACTIVATE')">DEACTIVATE DEVICE</button>
+      </div>
+      <div class="sub-note">Deactivation starts a 24-hour grace period before the device locks.</div>
+    </div>
+
     <!-- DANGER -->
     <div class="panel panel-danger">
       <div class="panel-label danger-label">DANGER ZONE</div>
