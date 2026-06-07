@@ -87,7 +87,6 @@ mqttClient.on('message', (topic, message) => {
         mismatch_error: data.mismatchError || data.mismatch_error || false,
         failsafe: data.failsafe || false,
         is_locked: data.isLocked || data.is_locked || false,
-        // Store all raw data for debugging
         raw_data: data
       };
       
@@ -132,7 +131,6 @@ setInterval(() => {
         io.emit('status_update', { deviceId, online: false });
         console.log(`⚠️ Device ${deviceId} went OFFLINE (no data for 60s)`);
         
-        // Send offline alert
         io.emit('new_alert', { 
           deviceId, 
           type: 'device_offline', 
@@ -144,11 +142,9 @@ setInterval(() => {
   }
 }, 10000);
 
-// Function to check and send alerts based on real data
 function checkAndSendAlerts(deviceId, device) {
   const alerts = [];
   
-  // Temperature alerts
   if (device.avg_temp > 0) {
     if (device.avg_temp > device.max_temp) {
       alerts.push({ 
@@ -166,7 +162,6 @@ function checkAndSendAlerts(deviceId, device) {
     }
   }
   
-  // Sensor errors
   if (device.sensor_error) {
     alerts.push({ 
       type: 'sensor_error', 
@@ -175,7 +170,6 @@ function checkAndSendAlerts(deviceId, device) {
     });
   }
   
-  // Mismatch error
   if (device.mismatch_error) {
     alerts.push({ 
       type: 'mismatch_error', 
@@ -184,7 +178,6 @@ function checkAndSendAlerts(deviceId, device) {
     });
   }
   
-  // Failsafe mode
   if (device.failsafe) {
     alerts.push({ 
       type: 'failsafe_mode', 
@@ -193,7 +186,6 @@ function checkAndSendAlerts(deviceId, device) {
     });
   }
   
-  // Signal quality alerts
   if (device.signal_quality > 0 && device.signal_quality < 25) {
     alerts.push({ 
       type: 'weak_signal', 
@@ -202,14 +194,12 @@ function checkAndSendAlerts(deviceId, device) {
     });
   }
   
-  // Send each alert
   alerts.forEach(alert => {
     console.log(`🔔 ALERT [${deviceId}]: ${alert.message}`);
     io.emit('new_alert', { deviceId, ...alert });
   });
 }
 
-// API Routes - Only show real devices that have sent data
 app.get('/api/devices', (req, res) => {
   try {
     const devices = Array.from(devicesStore.values());
@@ -232,13 +222,11 @@ app.get('/api/devices/:deviceId', (req, res) => {
   }
 });
 
-// Send command to real device via MQTT
 app.post('/api/devices/:deviceId/control/:command', (req, res) => {
   try {
     const { deviceId, command } = req.params;
     const { value } = req.body;
     
-    // Check if device exists
     if (!devicesStore.has(deviceId)) {
       return res.status(404).json({ error: 'Device not found' });
     }
@@ -246,7 +234,6 @@ app.post('/api/devices/:deviceId/control/:command', (req, res) => {
     const topic = `broodinnox/${deviceId}/control/${command}`;
     let payload = value;
     
-    // Handle different command types
     if (command === 'relay') {
       payload = { state: value };
     } else if (command === 'max_temp' || command === 'min_temp') {
@@ -269,7 +256,6 @@ app.post('/api/devices/:deviceId/control/:command', (req, res) => {
       payload = { active: value === 'ACTIVE' };
     }
     
-    // Publish to MQTT
     mqttClient.publish(topic, JSON.stringify(payload), (error) => {
       if (error) {
         console.error('❌ MQTT publish error:', error);
@@ -285,10 +271,8 @@ app.post('/api/devices/:deviceId/control/:command', (req, res) => {
   }
 });
 
-// Get device temperature history (from memory)
 const temperatureHistory = new Map();
 
-// Store temperature readings for history
 setInterval(() => {
   for (let [deviceId, device] of devicesStore) {
     if (device.avg_temp > 0) {
@@ -306,7 +290,6 @@ setInterval(() => {
         relay_state: device.relay_state
       });
       
-      // Keep last 1000 readings
       if (history.length > 1000) {
         history.shift();
       }
@@ -319,7 +302,6 @@ app.get('/api/devices/:deviceId/history', (req, res) => {
     const { period } = req.query;
     let history = temperatureHistory.get(req.params.deviceId) || [];
     
-    // Filter by period
     const now = new Date();
     let cutoffTime = new Date();
     
@@ -344,11 +326,9 @@ app.get('/api/devices/:deviceId/history', (req, res) => {
   }
 });
 
-// WebSocket connections
 io.on('connection', (socket) => {
   console.log('🔌 Web client connected');
   
-  // Send current device list to new client
   const devices = Array.from(devicesStore.values());
   socket.emit('devices_list', devices);
   
@@ -362,7 +342,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n🚀 Broodinnox Dashboard Server Running`);
