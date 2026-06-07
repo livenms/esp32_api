@@ -1,5 +1,5 @@
 function renderDashboard() {
-  const data = window.latestData;
+  const d = window.latestData;
 
   const el = document.getElementById("content");
   if (!el) return;
@@ -7,58 +7,71 @@ function renderDashboard() {
   el.innerHTML = `
     <div class="card">
       <h3>System Status</h3>
-      <p>Day: <b>${data.day ?? "-"}</b> / ${data.total_days ?? "-"}</p>
-      <p>Relay: <b>${data.relay_state ? "ON" : "OFF"}</b></p>
-      <p>Locked: <b>${data.device_locked ? "YES" : "NO"}</b></p>
+      <p>Day: <b>${d.day ?? "-"}/${d.total_days ?? "-"}</b></p>
+      <p>Relay: <b>${d.relay_state ? "ON" : "OFF"}</b></p>
+      <p>Mode: <b>${d.manual_control ? "MANUAL" : "AUTO"}</b></p>
+      <p>Locked: <b>${d.device_locked ? "YES" : "NO"}</b></p>
     </div>
 
     <div class="card">
       <h3>Temperature</h3>
-      <div class="grid">
-        <div>Sensor 1 <div class="value">${data.sensor1 ?? "--"}°C</div></div>
-        <div>Sensor 2 <div class="value">${data.sensor2 ?? "--"}°C</div></div>
-        <div>Sensor 3 <div class="value">${data.sensor3 ?? "--"}°C</div></div>
-        <div>Sensor 4 <div class="value">${data.sensor4 ?? "--"}°C</div></div>
-      </div>
+      <p>Avg: <span class="value">${d.ave_temp ?? "--"}°C</span></p>
     </div>
 
     <div class="card">
-      <h3>Average Temperature</h3>
-      <div class="value">${data.ave_temp ?? "--"}°C</div>
+      <h3>Live Sensors</h3>
+      <p>S1: ${d.sensor1 ?? "--"}°C</p>
+      <p>S2: ${d.sensor2 ?? "--"}°C</p>
+      <p>S3: ${d.sensor3 ?? "--"}°C</p>
+      <p>S4: ${d.sensor4 ?? "--"}°C</p>
+    </div>
+
+    <!-- 🔥 CONTROL PANEL -->
+    <div class="card">
+      <h3>Manual Control</h3>
+
+      <button onclick="setRelay('ON')">Relay ON</button>
+      <button onclick="setRelay('OFF')">Relay OFF</button>
+      <button onclick="setRelay('AUTO')">AUTO MODE</button>
+
+      <hr/>
+
+      <button onclick="lockDevice()" style="background:red;color:white">
+        LOCK DEVICE
+      </button>
+
+      <button onclick="unlockDevice()" style="background:green;color:white">
+        UNLOCK DEVICE
+      </button>
     </div>
 
     <div class="card">
-      <h3>Network</h3>
-      <p>Signal: ${data.signal_quality ?? "-"}</p>
-      <p>Status: ${data.failsafe_mode ? "FAILSAFE" : "NORMAL"}</p>
+      <h3>Temperature Control</h3>
+
+      <input id="maxT" type="number" placeholder="Max Temp"/>
+      <button onclick="setMaxTemp(document.getElementById('maxT').value)">
+        Set Max
+      </button>
+
+      <br/><br/>
+
+      <input id="minT" type="number" placeholder="Min Temp"/>
+      <button onclick="setMinTemp(document.getElementById('minT').value)">
+        Set Min
+      </button>
     </div>
   `;
 }
 
 function showPage(page) {
-  const el = document.getElementById("content");
-
-  if (page === "dashboard") {
-    renderDashboard();
-  }
+  if (page === "dashboard") renderDashboard();
 
   if (page === "sensors") {
-    el.innerHTML = `
-      <div class="card">
-        <h3>Raw Sensor View</h3>
-        <pre>${JSON.stringify(window.latestData, null, 2)}</pre>
-      </div>
-    `;
+    document.getElementById("content").innerHTML =
+      `<pre>${JSON.stringify(window.latestData, null, 2)}</pre>`;
   }
 
-  if (page === "control") {
-    el.innerHTML = `
-      <div class="card">
-        <h3>Control Panel</h3>
-        <p>Direct control via MQTT not enabled in UI (ESP32 handles logic).</p>
-      </div>
-    `;
-  }
+  if (page === "control") renderDashboard();
 }
 
 window.showPage = showPage;
