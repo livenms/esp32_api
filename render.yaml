@@ -1,18 +1,16 @@
 services:
   - type: web
-    name: broodinnox-dashboard
-    env: node
+    name: broodinnox-pro
+    runtime: node
+    plan: free
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: npm start
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: SESSION_SECRET
+        generateValue: true
       - key: MQTT_BROKER
         value: mqtt://broker.hivemq.com
-      - key: DEVICE_ID
-        value: BROODIINNOX-001
-    healthCheckPath: /api/health
-    autoDeploy: true
-    plan: free
+      - key: NODE_ENV
+        value: production
