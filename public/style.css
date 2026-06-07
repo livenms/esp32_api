@@ -1,8 +1,16 @@
+.card {
+  background: #1b2230;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #2c3445;
+}
+
 button {
-  padding: 10px;
   margin: 5px;
-  border-radius: 6px;
+  padding: 10px;
   border: none;
+  border-radius: 6px;
   background: #2d3a4d;
   color: white;
   cursor: pointer;
@@ -15,7 +23,7 @@ button:hover {
 input {
   padding: 8px;
   margin: 5px;
-  width: 150px;
   border-radius: 5px;
   border: none;
+  width: 140px;
 }
