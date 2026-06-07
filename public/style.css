@@ -265,6 +265,34 @@ input[type=checkbox].hidden, .sctl input[type=checkbox] { position: absolute; op
 .info-kv span.err    { color: var(--red); }
 .info-kv span.warn   { color: var(--amber); }
 
+/* ── SUBSCRIPTION PANEL ─────────────────────────────────────────────────────── */
+.sub-label { color: var(--blue) !important; }
+.sub-status-row { margin-bottom: 14px; }
+.sub-indicator { display: flex; align-items: center; gap: 10px; }
+.sub-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0; transition: all .4s;
+}
+.sub-indicator.active   .sub-dot { background: var(--green); box-shadow: 0 0 7px var(--green); animation: pulse 2s infinite; }
+.sub-indicator.grace    .sub-dot { background: var(--amber); box-shadow: 0 0 7px var(--amber); animation: pulse 1s infinite; }
+.sub-indicator.locked   .sub-dot { background: var(--red);   box-shadow: 0 0 7px var(--red); }
+.sub-state-text { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+.sub-indicator.active .sub-state-text { color: var(--green); }
+.sub-indicator.grace  .sub-state-text { color: var(--amber); }
+.sub-indicator.locked .sub-state-text { color: var(--red); }
+
+.sub-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.sub-btn {
+  font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  padding: 10px 6px; border-radius: 4px; cursor: pointer;
+  border: 1px solid; background: transparent; transition: all .2s;
+}
+.sub-activate   { border-color: var(--green); color: var(--green); }
+.sub-activate:hover { background: rgba(45,187,106,.1); }
+.sub-deactivate { border-color: var(--red); color: var(--red); }
+.sub-deactivate:hover { background: rgba(232,64,64,.1); }
+.sub-note { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
 /* ── DANGER ─────────────────────────────────────────────────────────────────── */
 .danger-label { color: var(--red) !important; }
 .danger-btn {
