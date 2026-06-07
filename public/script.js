@@ -1,4 +1,3 @@
-// API Service
 const API = {
     baseURL: '/api',
     
@@ -33,7 +32,6 @@ const API = {
     }
 };
 
-// Main App
 const App = {
     socket: null,
     currentView: 'dashboard',
@@ -119,7 +117,6 @@ const App = {
     }
 };
 
-// Dashboard Component
 const Dashboard = {
     devices: [],
     socket: null,
@@ -155,7 +152,6 @@ const Dashboard = {
     init(socket) {
         this.socket = socket;
         this.loadDevices();
-        this.loadAlerts();
         setInterval(() => this.loadDevices(), 10000);
     },
     
@@ -180,6 +176,7 @@ const Dashboard = {
                     <div class="spinner"></div>
                     <p>No devices found. Waiting for real device data...</p>
                     <p style="font-size:14px;margin-top:10px">Devices will appear here automatically when they send MQTT data</p>
+                    <p style="font-size:12px;margin-top:5px">Expected topic format: broodinnox/{DEVICE_ID}/data</p>
                 </div>
             `;
             return;
@@ -209,7 +206,7 @@ const Dashboard = {
                 <div class="temp-display">
                     <div class="temp-value ${tempClass}">${device.avg_temp > 0 ? device.avg_temp.toFixed(1) : '--'}°C</div>
                     <div style="font-size:12px;color:#666">
-                        Target: ${device.min_temp}°C - ${device.max_temp}°C
+                        Target: ${device.min_temp || 30}°C - ${device.max_temp || 35}°C
                     </div>
                 </div>
                 <div class="device-stats">
@@ -252,7 +249,6 @@ const Dashboard = {
             this.devices[index] = { ...this.devices[index], ...data };
             this.renderDevices();
         } else {
-            // New device discovered
             this.loadDevices();
         }
     },
@@ -264,10 +260,6 @@ const Dashboard = {
             this.devices[index].is_locked = data.locked;
             this.renderDevices();
         }
-    },
-    
-    async loadAlerts() {
-        // Alerts are shown in real-time via socket
     },
     
     addAlert(alert) {
@@ -303,7 +295,6 @@ const Dashboard = {
     }
 };
 
-// Device Detail Component
 const DeviceDetail = {
     deviceId: null,
     device: null,
@@ -617,12 +608,10 @@ const DeviceDetail = {
     }
 };
 
-// Make available globally
 window.Dashboard = Dashboard;
 window.DeviceDetail = DeviceDetail;
 window.App = App;
 
-// Start the app when page loads
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
