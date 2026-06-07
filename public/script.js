@@ -5,10 +5,10 @@ let client;
 
 const topics = {
   data: `broodinnox/${DEVICE_ID}/data`,
-  status: `broodinnox/${DEVICE_ID}/status`,
   relay: `broodinnox/${DEVICE_ID}/control/relay`,
   maxTemp: `broodinnox/${DEVICE_ID}/control/max_temp`,
   minTemp: `broodinnox/${DEVICE_ID}/control/min_temp`,
+  sensor: `broodinnox/${DEVICE_ID}/control/sensor`,
   lock: `broodinnox/${DEVICE_ID}/control/device_active`
 };
 
@@ -21,13 +21,11 @@ function connectMQTT() {
     document.getElementById("mqttStatus").innerText = "Connected";
 
     client.subscribe(topics.data);
-    client.subscribe(topics.status);
   });
 
-  client.on("message", (topic, message) => {
+  client.on("message", (topic, msg) => {
     try {
-      const data = JSON.parse(message.toString());
-      window.latestData = data;
+      window.latestData = JSON.parse(msg.toString());
       renderDashboard();
     } catch (e) {}
   });
@@ -38,29 +36,33 @@ function publish(topic, msg) {
     alert("MQTT not connected");
     return;
   }
-  client.publish(topic, msg.toString());
+  client.publish(topic, String(msg));
 }
 
 /* ---------------- CONTROL FUNCTIONS ---------------- */
 
-window.setRelay = function (state) {
-  publish(topics.relay, state); // ON / OFF / AUTO
+window.setRelay = (state) => {
+  publish(topics.relay, state);
 };
 
-window.setMaxTemp = function (val) {
-  publish(topics.maxTemp, val);
+window.setMaxTemp = () => {
+  const v = document.getElementById("maxT").value;
+  publish(topics.maxTemp, v);
 };
 
-window.setMinTemp = function (val) {
-  publish(topics.minTemp, val);
+window.setMinTemp = () => {
+  const v = document.getElementById("minT").value;
+  publish(topics.minTemp, v);
 };
 
-window.lockDevice = function () {
-  publish(topics.lock, "LOCKED");
+window.toggleSensor = (id) => {
+  const d = window.latestData || {};
+  const current = d[`s${id.slice(-1).toLowerCase()}_enabled`] ? "ON" : "OFF";
+  const next = current === "ON" ? "OFF" : "ON";
+  publish(topics.sensor, `${id}:${next}`);
 };
 
-window.unlockDevice = function () {
-  publish(topics.lock, "ACTIVE");
-};
+window.lockDevice = () => publish(topics.lock, "LOCKED");
+window.unlockDevice = () => publish(topics.lock, "ACTIVE");
 
 connectMQTT();
