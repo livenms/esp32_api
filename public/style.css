@@ -175,9 +175,21 @@ header h1 {
   font-weight: 600;
 }
 
-#mqttStatusIcon {
-  color: #fbbf24;
+.status-dot {
   margin-right: 6px;
+  color: #fbbf24; /* default: connecting/unknown */
+}
+
+.status-dot.online {
+  color: #22c55e;
+}
+
+.status-dot.offline {
+  color: #ef4444;
+}
+
+.status-dot.connecting {
+  color: #fbbf24;
 }
 
 /* DASHBOARD GRID */
