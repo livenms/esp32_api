@@ -1,5 +1,5 @@
 const DEVICE_ID = "BROODIINNOX-001";
-const broker = "wss://test.mosquitto.org:8081/mqtt";
+const broker = "wss://broker.hivemq.com:8081/mqtt";
 
 let client;
 
