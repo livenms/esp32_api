@@ -34,9 +34,13 @@ first boot to skip the default entirely.
 - **Auth** — `express-session` + `bcryptjs`. Sessions are server-side cookies;
   the admin API (`/api/admin/*`) and the scoped user API (`/api/me/*`) both
   check the session before doing anything.
-- **Data** — a small JSON file at `data/db.json`, created automatically. Fine
-  for the current scale; if you outgrow it, swap `lib/db.js` for a real
-  database (e.g. Render's free Postgres) without touching the routes.
+- **Data** — SQLite via `better-sqlite3`, stored as a single file at
+  `data/broodiinnox.db` (plus its `-wal`/`-shm` companion files), created
+  automatically on first boot. Real relational tables (`users`, `devices`,
+  `payments`) with a foreign key from devices→owner and payments→device, so
+  deleting a user un-assigns their devices and deleting a device removes its
+  payment history automatically. `lib/db.js` is the only file that talks to
+  the database — swap it for Postgres/MySQL later without touching routes.
 - **Live device data** — unchanged from the original dashboard: the browser
   connects directly to the public MQTT broker over WebSockets
   (`wss://<broker>:8884/mqtt`) and subscribes to
