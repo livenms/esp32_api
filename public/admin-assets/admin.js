@@ -105,13 +105,17 @@ function connectLiveStatusForDevices() {
 
     client.on("connect", () => {
       devices.forEach((d) => {
-        client.subscribe(`BROODIINNOX/${d.deviceId}/status`);
-        client.subscribe(`BROODIINNOX/${d.deviceId}/data`);
+        const prefix = d.topicPrefix || "BROODIINNOX";
+        client.subscribe(`${prefix}/${d.deviceId}/status`);
+        client.subscribe(`${prefix}/${d.deviceId}/data`);
       });
     });
 
     client.on("message", (topic, payload) => {
-      const match = topic.match(/^BROODIINNOX\/([^/]+)\/(status|data)$/);
+      // Topic prefix varies per firmware build (e.g. "BROODIINNOX" vs
+      // "broodinnox"), so match on the device ID segment rather than a
+      // fixed prefix: "<anything>/<deviceId>/(status|data)".
+      const match = topic.match(/^[^/]+\/([^/]+)\/(status|data)$/);
       if (!match) return;
       const externalId = match[1];
       const device = state.devices.find((d) => d.deviceId === externalId);
@@ -145,7 +149,8 @@ function publishDeviceCommand(device, topic, value) {
     toast("Not connected to the MQTT broker yet — try again in a moment.", "error");
     return;
   }
-  client.publish(`BROODIINNOX/${device.deviceId}/control/${topic}`, String(value));
+  const prefix = device.topicPrefix || "BROODIINNOX";
+  client.publish(`${prefix}/${device.deviceId}/control/${topic}`, String(value));
   toast(`Command sent to ${device.name}.`, "success");
 }
 
@@ -276,7 +281,7 @@ function renderDevices() {
       <tr>
         <td>
           <div class="device-row-name">${escapeHtml(d.name)}</div>
-          <div class="device-row-id">${escapeHtml(d.deviceId)}</div>
+          <div class="device-row-id">${escapeHtml(d.topicPrefix || "BROODIINNOX")}/${escapeHtml(d.deviceId)}</div>
         </td>
         <td>${d.ownerId ? ownerPill(d) : `<span class="unassigned-tag">Unassigned</span>`}</td>
         <td><span class="badge badge-neutral">${escapeHtml(d.animal)}</span></td>
@@ -377,6 +382,11 @@ function deviceFormHtml(d) {
         <label for="f_broker">MQTT broker</label>
         <input type="text" id="f_broker" name="mqttBroker" placeholder="broker.hivemq.com" value="${escapeHtml(d.mqttBroker || "broker.hivemq.com")}" />
       </div>
+    </div>
+    <div class="field">
+      <label for="f_prefix">MQTT topic prefix</label>
+      <input type="text" id="f_prefix" name="topicPrefix" placeholder="BROODIINNOX" value="${escapeHtml(d.topicPrefix || "BROODIINNOX")}" required />
+      <p class="field-hint">Must exactly match the prefix your firmware publishes with — check the <code>topic_data</code> line in the .ino file (e.g. <code>BROODIINNOX</code> or <code>broodinnox</code>). Case-sensitive.</p>
     </div>
     <div class="field">
       <label for="f_location">Location <span class="text-muted">(optional)</span></label>

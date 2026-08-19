@@ -117,7 +117,8 @@ function connectMqttForActiveDevice() {
   if (!device) return;
 
   const broker = device.mqttBroker || "broker.hivemq.com";
-  const base = `BROODIINNOX/${device.deviceId}`;
+  const prefix = device.topicPrefix || "BROODIINNOX";
+  const base = `${prefix}/${device.deviceId}`;
 
   mqttClient = mqtt.connect(`wss://${broker}:8884/mqtt`, { reconnectPeriod: 3000 });
 
@@ -178,7 +179,8 @@ function publish(topic, value) {
     toast("Not connected to the device yet — please wait a moment and try again.", "error");
     return;
   }
-  mqttClient.publish(`BROODIINNOX/${device.deviceId}/control/${topic}`, String(value));
+  const prefix = device.topicPrefix || "BROODIINNOX";
+  mqttClient.publish(`${prefix}/${device.deviceId}/control/${topic}`, String(value));
 }
 
 function updateConnectionUI() {
@@ -246,7 +248,7 @@ function renderDashboard() {
       <div class="conn-item"><span id="brokerDot" class="status-dot"></span><span id="brokerText">Connecting…</span></div>
       <div class="conn-item"><span id="deviceDot" class="status-dot"></span><span id="deviceText">Connecting…</span></div>
       <div class="spacer"></div>
-      <div class="conn-item text-muted mono" style="font-size:12px;">${escapeHtml(device.deviceId)}</div>
+      <div class="conn-item text-muted mono" style="font-size:12px;">${escapeHtml(device.topicPrefix || "BROODIINNOX")}/${escapeHtml(device.deviceId)}</div>
     </div>
 
     <div class="grid-2">

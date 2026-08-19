@@ -63,6 +63,7 @@ function publicDevice(d) {
     deviceId: d.deviceId,
     name: d.name,
     mqttBroker: d.mqttBroker,
+    topicPrefix: d.topicPrefix || "BROODIINNOX",
     animal: d.animal,
     location: d.location,
     ownerId: d.ownerId,
