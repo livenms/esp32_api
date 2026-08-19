@@ -154,6 +154,27 @@ function publishDeviceCommand(device, topic, value) {
   toast(`Command sent to ${device.name}.`, "success");
 }
 
+function toggleDeviceLock(deviceRecordId) {
+  const device = state.devices.find((d) => d.id === deviceRecordId);
+  if (!device) return;
+  const live = state.liveStatus[device.id];
+  const currentlyLocked = live ? !!live.deviceLocked : false;
+  const nextAction = currentlyLocked ? "ACTIVE" : "LOCKED";
+
+  openModal({
+    title: currentlyLocked ? `Unlock "${device.name}"?` : `Lock "${device.name}"?`,
+    bodyHtml: currentlyLocked
+      ? `<p>This reactivates the device — the relay, alarm and controls resume normal operation immediately.</p>`
+      : `<p>This immediately disables the relay, alarm and all controls on the device (used when a subscription lapses). The farm user will see a "locked" notice on their dashboard.</p>`,
+    submitLabel: currentlyLocked ? "Unlock device" : "Lock device",
+    danger: !currentlyLocked,
+    onSubmit: async () => {
+      publishDeviceCommand(device, "device_active", nextAction);
+    },
+  });
+}
+window.toggleDeviceLock = toggleDeviceLock;
+
 /* ==========================================================
    OVERVIEW TAB
    ========================================================== */
@@ -276,6 +297,15 @@ function renderDevices() {
     const dotClass = live ? (live.online ? "online" : "offline") : "";
     const liveLabel = live ? (live.online ? "Online" : "Offline") : "Connecting…";
     const tempLabel = live && live.aveTemp !== null ? `${live.aveTemp.toFixed(1)}&deg;C` : "—";
+    const locked = live ? live.deviceLocked : null;
+    const lockBadge =
+      locked === null
+        ? `<span class="badge badge-neutral">Unknown</span>`
+        : locked
+        ? `<span class="badge badge-danger">Locked</span>`
+        : `<span class="badge badge-ok">Active</span>`;
+    const lockBtnLabel = locked ? "Unlock" : "Lock";
+    const lockBtnClass = locked ? "btn-secondary" : "btn-outline-danger";
 
     return `
       <tr>
@@ -288,8 +318,10 @@ function renderDevices() {
         <td><span class="live-dot ${dotClass}"></span>${liveLabel}</td>
         <td class="mono">${tempLabel}</td>
         <td>${subscriptionBadge(d.subscription)}<span class="subscription-cell"><span class="sub-date">${d.subscription.dueDate ? "Due " + fmtDate(d.subscription.dueDate) : ""}</span></span></td>
+        <td>${lockBadge}</td>
         <td>
           <div class="row-actions">
+            <button class="btn ${lockBtnClass} btn-sm" onclick="toggleDeviceLock('${d.id}')" ${live ? "" : "disabled title=\"Waiting for live connection…\""}>${lockBtnLabel}</button>
             <button class="btn btn-secondary btn-sm" onclick="openAssignModal('${d.id}')">Assign</button>
             <button class="btn btn-secondary btn-sm" onclick="openEditDeviceModal('${d.id}')">Edit</button>
             <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteDevice('${d.id}')">Delete</button>
@@ -312,7 +344,7 @@ function renderDevices() {
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Device</th><th>Owner</th><th>Animal</th><th>Live status</th><th>Avg temp</th><th>Subscription</th><th></th></tr>
+              <tr><th>Device</th><th>Owner</th><th>Animal</th><th>Live status</th><th>Avg temp</th><th>Subscription</th><th>Security</th><th></th></tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
